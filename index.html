@@ -205,7 +205,7 @@ input::placeholder,textarea::placeholder{color:var(--tm)}
 .lbox{background:var(--card);border:1px solid var(--border);border-radius:var(--radius-lg);padding:34px 40px;text-align:center;max-width:300px;width:90%;box-shadow:var(--shadow-lg)}
 .spin{width:46px;height:46px;border:3px solid rgba(128,128,128,.1);border-top-color:var(--accent-1);border-right-color:var(--accent-2);border-radius:50%;animation:spin .85s linear infinite;margin:0 auto 16px}
 @keyframes spin{to{transform:rotate(360deg)}}
-.ltitle{font-family:var(--font-d);font-size:15px;font-weight:700;color:var(--t1);margin-bottom:5px}
+.lttitle{font-family:var(--font-d);font-size:15px;font-weight:700;color:var(--t1);margin-bottom:5px}
 .lsub{font-size:12px;color:var(--t2);line-height:1.7}
 .dots{display:inline-flex;gap:4px;margin-top:12px}
 .dots span{width:5px;height:5px;background:var(--accent-1);border-radius:50%;animation:db 1.2s infinite ease-in-out}
@@ -810,17 +810,15 @@ input::placeholder,textarea::placeholder{color:var(--tm)}
 
 <script>
 // ===================== KONEKSI KE APPS SCRIPT (SHEET SEBAGAI DATABASE) =====================
-// Ganti nilai di bawah ini dengan URL Web App hasil "Deploy > New deployment" (harus diakhiri "/exec").
-// Selama halaman ini masih dibuka LEWAT Apps Script itu sendiri (doGet tanpa ?action),
-// deteksi otomatis di bawah akan memakai URL exec saat ini sehingga tidak perlu diisi manual.
-// Kalau index.html ini dihosting terpisah (di luar Apps Script), WAJIB diisi manual.
+// ---> PERUBAHAN ADA DI SINI: URL HARUS DIISI MANUAL KARENA DI-HOSTING DI GITHUB <---
 var GAS_API_URL = (function(){
   try{
     var href = (top && top.location && top.location.href) ? top.location.href : window.location.href;
     if(/\/exec(\?|$)/.test(href)) return href.split('?')[0];
   }catch(e){}
-  return ''; // <-- Isi manual di sini jika index.html dihosting di luar Apps Script, contoh:
-             // 'https://script.google.com/macros/s/AKfycbwrOwJ8HjqW35tXWf3doaGSR_5uIxbGp4wGUR3Ko1YsIxgMplSxbhRV0FPicXM9pLA/exec'
+  
+  // GANTI TEKS DI BAWAH INI DENGAN URL WEB APP GOOGLE APPS SCRIPT ANDA
+  return 'https://script.google.com/macros/s/AKfycbyuW91ZDIOql2DAKmeIlEfVhBZ3C7_lC64LXHzXcQ5ignEVNcoZoRhp8Y2QDkZo8XM/exec'; 
 })();
 
 function isGasConfigured(){ return !!GAS_API_URL; }
