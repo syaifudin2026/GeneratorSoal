@@ -1,0 +1,2246 @@
+<!DOCTYPE html>
+<html lang="id" data-theme="light">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>AI Generator Soal Ujian</title>
+<link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Plus+Jakarta+Sans:wght@600;700;800&display=swap" rel="stylesheet">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+<style>
+/* ===== THEME TOKENS ===== */
+:root {
+  --accent-1:#4F46E5; --accent-2:#0EA5E9;
+  --accent-glow:rgba(79,70,229,.2);
+  --success:#10B981; --warning:#F59E0B; --error:#EF4444; --info:#3B82F6;
+  --radius-sm:8px; --radius-md:12px; --radius-lg:18px;
+  --font-d:'Plus Jakarta Sans',sans-serif; --font-b:'Inter',sans-serif;
+}
+[data-theme="light"] {
+  --bg:#F1F5F9; --surface:#FFFFFF; --card:#FFFFFF; --input:#F8FAFC;
+  --border:#E2E8F0; --border-h:#CBD5E1;
+  --t1:#0F172A; --t2:#475569; --tm:#94A3B8;
+  --shadow:0 1px 12px rgba(15,23,42,.07);
+  --shadow-lg:0 4px 24px rgba(15,23,42,.10);
+  --sb-bg:linear-gradient(160deg,#4F46E5 0%,#0EA5E9 100%);
+  --sb-text:#fff; --sb-text2:rgba(255,255,255,.7); --sb-text3:rgba(255,255,255,.45);
+  --sb-nav-active:rgba(255,255,255,.2); --sb-nav-hover:rgba(255,255,255,.1);
+  --sb-border:rgba(255,255,255,.15);
+}
+[data-theme="dark"] {
+  --bg:#0F172A; --surface:#1E293B; --card:#1E293B; --input:#0F172A;
+  --border:#334155; --border-h:#475569;
+  --t1:#F1F5F9; --t2:#94A3B8; --tm:#475569;
+  --shadow:0 1px 12px rgba(0,0,0,.4);
+  --shadow-lg:0 4px 24px rgba(0,0,0,.5);
+  --sb-bg:linear-gradient(160deg,#312E81 0%,#1e3a5f 100%);
+  --sb-text:#F1F5F9; --sb-text2:rgba(241,245,249,.65); --sb-text3:rgba(241,245,249,.35);
+  --sb-nav-active:rgba(255,255,255,.12); --sb-nav-hover:rgba(255,255,255,.06);
+  --sb-border:rgba(255,255,255,.08);
+}
+
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+html{height:100%}
+body{background:var(--bg);color:var(--t1);font-family:var(--font-b);font-size:14px;line-height:1.6;-webkit-font-smoothing:antialiased;transition:background .3s,color .3s;min-height:100vh}
+
+::-webkit-scrollbar{width:5px;height:5px}
+::-webkit-scrollbar-track{background:transparent}
+::-webkit-scrollbar-thumb{background:rgba(128,128,128,.2);border-radius:8px}
+
+/* ===== LAYOUT ===== */
+.shell{display:flex;height:100vh;overflow:hidden}
+.sidebar{width:240px;background:var(--sb-bg);display:flex;flex-direction:column;flex-shrink:0;position:relative;z-index:10;transition:all .3s;overflow:hidden}
+.sidebar::after{content:'';position:absolute;top:0;right:0;width:1px;height:100%;background:var(--sb-border);pointer-events:none}
+.main-wrap{flex:1;display:flex;overflow:hidden}
+
+/* ===== SIDEBAR ===== */
+.sb-brand{padding:24px 18px 20px;border-bottom:1px solid var(--sb-border)}
+.sb-logo-row{display:flex;align-items:center;gap:11px}
+.sb-icon{width:38px;height:38px;border-radius:10px;background:rgba(255,255,255,.18);backdrop-filter:blur(10px);display:flex;align-items:center;justify-content:center;font-size:16px;color:#fff;flex-shrink:0;box-shadow:0 2px 8px rgba(0,0,0,.2)}
+.sb-name{font-family:var(--font-d);font-size:15px;font-weight:800;color:var(--sb-text);letter-spacing:-.2px}
+.sb-tag{font-size:10px;color:var(--sb-text3);letter-spacing:.3px;margin-top:1px}
+.sb-nav{flex:1;padding:14px 10px;display:flex;flex-direction:column;gap:3px;overflow-y:auto}
+.nav-lbl{font-size:9.5px;font-weight:700;text-transform:uppercase;letter-spacing:1.2px;color:var(--sb-text3);padding:10px 10px 5px}
+.nav-btn{width:100%;display:flex;align-items:center;gap:10px;padding:10px 12px;border-radius:10px;border:none;background:transparent;color:var(--sb-text2);font-family:var(--font-b);font-size:13px;font-weight:500;cursor:pointer;transition:all .2s;text-align:left}
+.nav-btn i{width:16px;text-align:center;font-size:13px;flex-shrink:0;opacity:.85}
+.nav-btn:hover{background:var(--sb-nav-hover);color:var(--sb-text)}
+.nav-btn.active{background:var(--sb-nav-active);color:#fff;font-weight:600}
+.nav-btn.active i{opacity:1}
+.sb-footer{padding:14px 16px;border-top:1px solid var(--sb-border)}
+
+/* Key counter badge */
+.key-badge{margin-left:auto;background:rgba(16,185,129,.25);color:#a7f3d0;font-size:10px;font-weight:700;padding:1px 7px;border-radius:10px;min-width:20px;text-align:center}
+
+/* Theme toggle in sidebar */
+.theme-toggle{display:flex;align-items:center;justify-content:center;margin-bottom:10px}
+.toggle-wrap{display:flex;background:rgba(0,0,0,.2);border:1px solid var(--sb-border);border-radius:30px;padding:3px;gap:2px;width:100%}
+.toggle-opt{display:flex;align-items:center;justify-content:center;gap:5px;padding:5px 0;border-radius:20px;border:none;background:transparent;color:var(--sb-text2);font-size:11px;font-weight:500;cursor:pointer;font-family:var(--font-b);transition:all .2s;flex:1}
+.toggle-opt.on{background:rgba(255,255,255,.2);color:#fff;box-shadow:0 1px 4px rgba(0,0,0,.2)}
+.ver{font-size:10.5px;color:var(--sb-text3);text-align:center;display:flex;align-items:center;justify-content:center;gap:6px;margin-top:6px}
+.dot-live{width:5px;height:5px;border-radius:50%;background:var(--success);flex-shrink:0}
+
+/* ===== FORM PANEL ===== */
+.form-panel{flex:1;min-width:0;overflow-y:auto;padding:24px 20px}
+.cw{max-width:620px;margin:0 auto;display:flex;flex-direction:column;gap:16px}
+.ph-title{font-family:var(--font-d);font-size:21px;font-weight:800;color:var(--t1);letter-spacing:-.3px}
+.ph-sub{font-size:12.5px;color:var(--t2);margin-top:4px}
+
+/* ===== PREVIEW PANEL ===== */
+.preview-panel{width:400px;flex-shrink:0;background:var(--surface);border-left:1px solid var(--border);display:flex;flex-direction:column;transition:background .3s,border-color .3s}
+.preview-header{padding:15px 18px;border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between}
+.preview-title{font-size:13px;font-weight:600;color:var(--t1);display:flex;align-items:center;gap:7px}
+.preview-title i{color:var(--accent-1);font-size:12px}
+.preview-body{flex:1;overflow-y:auto;padding:14px}
+.kop-preview{background:#fff;border:1px solid #ddd;border-radius:8px;overflow:hidden;box-shadow:0 2px 12px rgba(0,0,0,.12)}
+.kop-preview-inner{padding:16px 14px;font-family:'Times New Roman',serif;color:#000;font-size:10pt}
+.preview-placeholder{text-align:center;padding:40px 20px;color:var(--tm)}
+.preview-placeholder i{font-size:30px;margin-bottom:10px;opacity:.3}
+.preview-placeholder p{font-size:12px;line-height:1.7}
+.prev-theme-wrap{display:flex;align-items:center;gap:4px}
+.prev-theme-btn{display:inline-flex;align-items:center;gap:4px;padding:4px 10px;border-radius:14px;border:1px solid var(--border);background:var(--input);color:var(--t2);font-size:10px;font-weight:500;cursor:pointer;font-family:var(--font-b);transition:all .2s}
+.prev-theme-btn.on{background:var(--accent-1);color:#fff;border-color:var(--accent-1)}
+.kop-preview-dark-wrap{background:#1a1d2e;padding:10px;border-radius:10px}
+.kop-preview-dark-wrap .kop-preview{border-color:#444;box-shadow:0 2px 12px rgba(0,0,0,.5)}
+.kop-preview-dark-wrap .kop-preview-inner{background:#fff}
+
+/* ===== CARD ===== */
+.card{background:var(--card);border:1px solid var(--border);border-radius:var(--radius-lg);padding:20px;transition:border-color .2s,background .3s,box-shadow .2s;box-shadow:var(--shadow)}
+.card:hover{border-color:var(--border-h);box-shadow:var(--shadow-lg)}
+.ch{display:flex;align-items:center;gap:10px;margin-bottom:16px;padding-bottom:12px;border-bottom:1px solid var(--border)}
+.ci{width:32px;height:32px;border-radius:8px;display:flex;align-items:center;justify-content:center;font-size:13px;flex-shrink:0}
+.ci.v{background:rgba(79,70,229,.12);color:var(--accent-1)}
+.ci.b{background:rgba(14,165,233,.12);color:var(--accent-2)}
+.ci.g{background:rgba(16,185,129,.12);color:var(--success)}
+.ci.a{background:rgba(245,158,11,.12);color:var(--warning)}
+.ci.r{background:rgba(239,68,68,.12);color:var(--error)}
+.ct{font-size:13.5px;font-weight:700;color:var(--t1)}
+.ct-sub{font-size:11px;color:var(--tm);margin-left:auto}
+
+/* ===== FORM ===== */
+.fg{display:flex;flex-direction:column;gap:5px}
+.g2{display:grid;grid-template-columns:1fr 1fr;gap:13px}
+.g3{display:grid;grid-template-columns:1fr 1fr 1fr;gap:13px}
+label.fl{font-size:11.5px;font-weight:600;color:var(--t2);letter-spacing:.15px}
+.req{color:var(--error);margin-left:2px}
+input,select,textarea{background:var(--input);border:1.5px solid var(--border);border-radius:var(--radius-sm);color:var(--t1);font-family:var(--font-b);font-size:13px;padding:9px 12px;outline:none;width:100%;transition:border-color .2s,box-shadow .2s;-webkit-appearance:none;appearance:none}
+select{background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='8' viewBox='0 0 12 8'%3E%3Cpath fill='%2394A3B8' d='M6 8L0 0h12z'/%3E%3C/svg%3E");background-repeat:no-repeat;background-position:right 11px center;padding-right:30px}
+input:focus,select:focus,textarea:focus{border-color:var(--accent-1);box-shadow:0 0 0 3px var(--accent-glow)}
+input::placeholder,textarea::placeholder{color:var(--tm)}
+.fhint{font-size:11px;color:var(--tm)}
+.fhint a{color:var(--accent-1);text-decoration:none;font-weight:500}
+.iw{position:relative}
+.iw input{padding-right:38px}
+.eye{position:absolute;right:11px;top:50%;transform:translateY(-50%);background:none;border:none;color:var(--tm);cursor:pointer;font-size:12px;transition:color .2s}
+.eye:hover{color:var(--t2)}
+
+/* ===== API KEY MANAGER ===== */
+.apikey-grid{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:10px}
+.apikey-slot{display:flex;align-items:center;gap:6px;background:var(--input);border:1.5px solid var(--border);border-radius:var(--radius-sm);padding:6px 8px;transition:border-color .2s}
+.apikey-slot.active-key{border-color:var(--success);background:rgba(16,185,129,.05)}
+.apikey-slot.saved-key{border-color:rgba(79,70,229,.3);background:rgba(79,70,229,.04)}
+.apikey-num{font-size:10px;font-weight:700;color:var(--tm);width:16px;flex-shrink:0;text-align:center}
+.apikey-slot.active-key .apikey-num{color:var(--success)}
+.apikey-input{flex:1;background:transparent;border:none;font-size:11.5px;padding:0;min-width:0;color:var(--t1)}
+.apikey-input:focus{box-shadow:none;border:none}
+.apikey-save-btn{padding:3px 8px;font-size:10.5px;border-radius:6px;border:1px solid var(--border);background:var(--accent-1);color:#fff;cursor:pointer;font-family:var(--font-b);font-weight:600;transition:all .2s;flex-shrink:0;white-space:nowrap}
+.apikey-save-btn:hover{background:#4338CA}
+.apikey-del-btn{padding:3px 7px;font-size:10.5px;border-radius:6px;border:1px solid rgba(239,68,68,.25);background:rgba(239,68,68,.07);color:var(--error);cursor:pointer;font-family:var(--font-b);transition:all .2s;flex-shrink:0}
+.apikey-del-btn:hover{background:rgba(239,68,68,.15)}
+.key-status-bar{display:flex;align-items:center;gap:8px;padding:8px 12px;background:rgba(16,185,129,.07);border:1px solid rgba(16,185,129,.2);border-radius:var(--radius-sm);font-size:12px;color:var(--t2)}
+.key-status-bar i{color:var(--success)}
+.key-status-bar strong{color:var(--success)}
+.key-rotation-info{font-size:11px;color:var(--tm);display:flex;align-items:center;gap:6px;padding:6px 10px;background:rgba(14,165,233,.05);border:1px solid rgba(14,165,233,.15);border-radius:var(--radius-sm);margin-top:6px}
+.key-rotation-info i{color:var(--accent-2);font-size:11px;flex-shrink:0}
+
+/* ===== MODEL INFO ===== */
+.model-info-box{display:flex;align-items:center;gap:10px;padding:10px 13px;background:rgba(16,185,129,.06);border:1.5px solid rgba(16,185,129,.2);border-radius:var(--radius-sm)}
+.model-icon{width:30px;height:30px;border-radius:8px;background:rgba(16,185,129,.15);color:var(--success);display:flex;align-items:center;justify-content:center;font-size:13px;flex-shrink:0}
+.model-name{font-size:13px;font-weight:700;color:var(--t1)}
+.model-desc{font-size:11px;color:var(--tm);margin-top:1px}
+
+/* ===== LOGO UPLOAD ===== */
+.logo-upload-area{border:2px dashed var(--border);border-radius:var(--radius-md);padding:16px;text-align:center;cursor:pointer;transition:all .2s;position:relative;overflow:hidden}
+.logo-upload-area:hover{border-color:var(--accent-1);background:rgba(79,70,229,.03)}
+.logo-upload-area.has-logo{border-style:solid;border-color:rgba(16,185,129,.4);background:rgba(16,185,129,.03)}
+.logo-upload-area input[type=file]{position:absolute;inset:0;opacity:0;cursor:pointer;width:100%;height:100%}
+.upload-preview{max-width:70px;max-height:70px;object-fit:contain;margin:0 auto 7px;display:none}
+.upload-preview.show{display:block}
+.upload-icon{font-size:22px;color:var(--tm);margin-bottom:6px}
+.upload-txt{font-size:12px;color:var(--t2);font-weight:500}
+.upload-sub{font-size:11px;color:var(--tm);margin-top:2px}
+.upload-actions{display:flex;gap:8px;justify-content:center;margin-top:9px}
+.btn-sm{display:inline-flex;align-items:center;gap:5px;padding:5px 13px;border-radius:20px;border:1.5px solid var(--border);background:var(--input);color:var(--t2);font-size:11px;cursor:pointer;font-family:var(--font-b);font-weight:500;transition:all .2s}
+.btn-sm:hover{border-color:var(--border-h);color:var(--t1)}
+.btn-sm.danger{border-color:rgba(239,68,68,.3);color:var(--error)}
+.btn-sm.danger:hover{background:rgba(239,68,68,.07)}
+
+/* ===== ROMAWI BLOCKS ===== */
+.rb{background:var(--input);border:1.5px solid var(--border);border-radius:var(--radius-md);padding:15px 16px;margin-bottom:10px;transition:border-color .2s}
+.rb:last-child{margin-bottom:0}
+.rb:hover{border-color:var(--border-h)}
+.rh{display:flex;align-items:center;gap:9px;margin-bottom:12px}
+.rbadge{background:linear-gradient(135deg,var(--accent-1),var(--accent-2));color:#fff;font-size:10px;font-weight:700;padding:2px 10px;border-radius:20px;font-family:var(--font-d)}
+.rt{font-size:13px;font-weight:600;color:var(--t1)}
+.ropt{font-size:11px;color:var(--tm);margin-left:auto;background:rgba(148,163,184,.1);border:1px solid var(--border);padding:2px 9px;border-radius:20px}
+
+/* ===== GENERATE BTN ===== */
+.btn-gen{display:inline-flex;align-items:center;gap:9px;background:linear-gradient(135deg,var(--accent-1),var(--accent-2));background-size:200%;animation:gs 4s ease infinite;color:#fff;font-family:var(--font-d);font-size:13.5px;font-weight:700;padding:12px 26px;border:none;border-radius:var(--radius-md);cursor:pointer;box-shadow:0 4px 20px var(--accent-glow);transition:transform .15s,box-shadow .15s;letter-spacing:.2px}
+@keyframes gs{0%{background-position:0% 50%}50%{background-position:100% 50%}100%{background-position:0% 50%}}
+.btn-gen:hover{transform:translateY(-2px);box-shadow:0 8px 28px rgba(79,70,229,.45)}
+.btn-gen:active{transform:none}
+.btn-gen:disabled{opacity:.5;cursor:not-allowed;transform:none;animation:none}
+.btn-row{display:flex;justify-content:flex-end;align-items:center;gap:10px;padding-top:4px}
+
+/* Print format chooser */
+.print-format-wrap{display:flex;gap:6px;margin-right:auto}
+.pf-btn{display:inline-flex;align-items:center;gap:5px;padding:7px 14px;border-radius:var(--radius-sm);border:1.5px solid var(--border);background:var(--input);color:var(--t2);font-size:12px;font-weight:600;cursor:pointer;font-family:var(--font-b);transition:all .2s}
+.pf-btn:hover{border-color:var(--border-h);color:var(--t1)}
+.pf-btn.selected{background:var(--accent-1);color:#fff;border-color:var(--accent-1)}
+.pf-btn .pf-icon{font-size:12px}
+.format-lbl{font-size:11.5px;font-weight:600;color:var(--t2);margin-right:4px;align-self:center}
+
+/* ===== LOADING ===== */
+.lov{position:fixed;inset:0;background:rgba(15,23,42,.8);backdrop-filter:blur(10px);z-index:200;align-items:center;justify-content:center;display:none}
+[data-theme="light"] .lov{background:rgba(241,245,249,.85)}
+.lbox{background:var(--card);border:1px solid var(--border);border-radius:var(--radius-lg);padding:34px 40px;text-align:center;max-width:300px;width:90%;box-shadow:var(--shadow-lg)}
+.spin{width:46px;height:46px;border:3px solid rgba(128,128,128,.1);border-top-color:var(--accent-1);border-right-color:var(--accent-2);border-radius:50%;animation:spin .85s linear infinite;margin:0 auto 16px}
+@keyframes spin{to{transform:rotate(360deg)}}
+.ltitle{font-family:var(--font-d);font-size:15px;font-weight:700;color:var(--t1);margin-bottom:5px}
+.lsub{font-size:12px;color:var(--t2);line-height:1.7}
+.dots{display:inline-flex;gap:4px;margin-top:12px}
+.dots span{width:5px;height:5px;background:var(--accent-1);border-radius:50%;animation:db 1.2s infinite ease-in-out}
+.dots span:nth-child(2){animation-delay:.2s;background:var(--accent-2)}
+.dots span:nth-child(3){animation-delay:.4s}
+@keyframes db{0%,80%,100%{transform:scale(.7);opacity:.5}40%{transform:scale(1.2);opacity:1}}
+
+/* ===== TOAST ===== */
+#tc{position:fixed;top:16px;right:16px;z-index:300;display:flex;flex-direction:column;gap:8px;pointer-events:none}
+.toast{background:var(--card);border:1px solid var(--border);border-radius:var(--radius-md);padding:13px 15px;min-width:280px;max-width:360px;box-shadow:var(--shadow-lg);display:flex;gap:11px;align-items:flex-start;pointer-events:all;animation:ti .3s cubic-bezier(.34,1.56,.64,1) forwards}
+@keyframes ti{from{opacity:0;transform:translateX(28px) scale(.95)}to{opacity:1;transform:translateX(0) scale(1)}}
+.toast.out{animation:to .25s ease forwards}
+@keyframes to{to{opacity:0;transform:translateX(28px) scale(.95)}}
+.tiv{width:30px;height:30px;border-radius:8px;display:flex;align-items:center;justify-content:center;font-size:12px;flex-shrink:0}
+.toast.error .tiv{background:rgba(239,68,68,.12);color:var(--error)}
+.toast.warning .tiv{background:rgba(245,158,11,.12);color:var(--warning)}
+.toast.success .tiv{background:rgba(16,185,129,.12);color:var(--success)}
+.toast.info .tiv{background:rgba(59,130,246,.12);color:var(--info)}
+
+/* Gaya khusus notifikasi Bismillah yang cerah & lucu */
+.toast.bismillah{
+  background: linear-gradient(135deg, #FFF7ED 0%, #FFEDD5 100%);
+  border: 2px solid #F97316;
+  box-shadow: 0 10px 25px rgba(249, 115, 22, 0.2);
+}
+.toast.bismillah .tiv {
+  background: #FFEDD5;
+  color: #EA580C;
+  font-size: 18px;
+  animation: bounce 1s infinite alternate;
+}
+@keyframes bounce {
+  from { transform: translateY(0); }
+  to { transform: translateY(-4px); }
+}
+
+.tb{flex:1}
+.ttl{font-weight:700;font-size:13px;color:var(--t1);margin-bottom:2px}
+.tms{font-size:11.5px;color:var(--t2);line-height:1.6}
+.ttip{margin-top:6px;font-size:11px;background:rgba(128,128,128,.05);border:1px solid var(--border);border-radius:6px;padding:6px 9px;color:var(--t2);line-height:1.6}
+.ttip a{color:var(--accent-1);text-decoration:none}
+.tcls{background:none;border:none;color:var(--tm);cursor:pointer;font-size:11px;flex-shrink:0;padding:2px;transition:color .2s}
+.tcls:hover{color:var(--t1)}
+
+/* ===== QUOTA BANNER ===== */
+.qbanner{background:linear-gradient(135deg,rgba(245,158,11,.06),rgba(245,158,11,.02));border:1px solid rgba(245,158,11,.22);border-radius:var(--radius-md);padding:12px 14px;display:none;gap:10px;align-items:flex-start;margin-top:12px}
+.qbi{font-size:15px;color:var(--warning);flex-shrink:0;margin-top:1px}
+.qbt{font-size:12.5px;font-weight:700;color:var(--warning);margin-bottom:3px}
+.qbm{font-size:11px;color:var(--t2);line-height:1.7}
+.qbm a{color:var(--accent-1);text-decoration:none;font-weight:500}
+
+/* ===== INFO BANNER ===== */
+.ibanner{background:rgba(14,165,233,.05);border:1px solid rgba(14,165,233,.15);border-radius:var(--radius-sm);padding:10px 12px;display:flex;gap:8px;font-size:11.5px;color:var(--t2);line-height:1.6}
+.ibanner i{color:var(--accent-2);font-size:12px;margin-top:2px;flex-shrink:0}
+
+/* ===== MOBILE OVERLAY ===== */
+.sb-overlay{display:none;position:fixed;inset:0;background:rgba(15,23,42,.5);z-index:9;backdrop-filter:blur(3px)}
+.sb-overlay.visible{display:block}
+
+/* ===== MOBILE TOP BAR ===== */
+.mobile-topbar{display:none;position:fixed;top:0;left:0;right:0;height:54px;background:var(--accent-1);z-index:8;align-items:center;padding:0 16px;gap:12px;box-shadow:0 2px 12px rgba(79,70,229,.3)}
+.mb-hamburger{background:rgba(255,255,255,.15);border:none;color:#fff;width:36px;height:36px;border-radius:9px;display:flex;align-items:center;justify-content:center;font-size:15px;cursor:pointer;flex-shrink:0}
+.mb-title{font-family:var(--font-d);font-size:15px;font-weight:800;color:#fff;flex:1}
+.mb-badge{font-size:10px;background:rgba(255,255,255,.2);color:#fff;padding:2px 8px;border-radius:10px}
+
+/* ===== PRINT SETTINGS (CUSTOM F4 / FOLIO & MARGINS) ===== */
+@media print{
+  html, body { height: auto !important; overflow: visible !important; background: #fff !important; }
+  body *{visibility:hidden}
+  #print-area,#print-area *{visibility:visible}
+  #print-area{
+    position: absolute !important;
+    left: 0; top: 0;
+    width: 100% !important;
+    height: auto !important;
+    overflow: visible !important;
+    display: block !important;
+    font-family:'Times New Roman',Times,serif;
+    color:#000;
+  }
+  .no-print{display:none!important}
+  
+  /* Settingan Spesifik F4 / Folio (215mm x 330mm) */
+  @page{
+    size: 215mm 330mm;
+    margin: 1cm 1.5cm 0.5cm 1.5cm; /* top 1 - right 1.5 - bottom 0.5 - left 1.5 */
+  }
+}
+
+/* ===== RESPONSIVE ===== */
+@media (max-width: 900px){
+  .preview-panel{display:none}
+}
+@media (max-width: 700px){
+  .shell{overflow:auto;height:auto;flex-direction:column;padding-top:54px}
+  .main-wrap{flex-direction:column;overflow:visible}
+  .sidebar{position:fixed;top:0;left:-260px;height:100vh;width:250px;z-index:10;transition:left .3s;box-shadow:none}
+  .sidebar.open{left:0;box-shadow:4px 0 24px rgba(0,0,0,.2)}
+  .mobile-topbar{display:flex}
+  .form-panel{padding:16px 14px;overflow:visible}
+  .g2{grid-template-columns:1fr!important}
+  .g3{grid-template-columns:1fr 1fr!important}
+  .apikey-grid{grid-template-columns:1fr!important}
+  .btn-row{flex-wrap:wrap}
+  .print-format-wrap{flex-wrap:wrap}
+  .lov .lbox{padding:24px 20px}
+  #tc{top:60px;right:10px;left:10px}
+  .toast{min-width:0;max-width:100%}
+}
+
+@media (max-width:400px){
+  .g3{grid-template-columns:1fr!important}
+}
+
+/* ===== ACCOUNT PICKER (tanpa password) ===== */
+.acc-picker-overlay{position:fixed;inset:0;background:linear-gradient(160deg,#4F46E5 0%,#0EA5E9 100%);z-index:9999;display:flex;align-items:center;justify-content:center;padding:24px;overflow-y:auto}
+.acc-picker-box{max-width:760px;width:100%;text-align:center}
+.ap-title{font-family:var(--font-d);font-size:26px;font-weight:800;color:#fff;letter-spacing:-.3px;margin-bottom:6px}
+.ap-sub{font-size:13px;color:rgba(255,255,255,.82);margin-bottom:32px}
+.acc-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:16px}
+@media(max-width:640px){.acc-grid{grid-template-columns:1fr;max-width:280px;margin:0 auto}}
+.acc-card{background:rgba(255,255,255,.12);backdrop-filter:blur(8px);border:1.5px solid rgba(255,255,255,.25);border-radius:20px;padding:26px 14px 20px;cursor:pointer;transition:transform .25s ease,background .25s,box-shadow .25s;display:flex;flex-direction:column;align-items:center;gap:8px;user-select:none}
+.acc-card:hover{transform:translateY(-6px) scale(1.03);background:rgba(255,255,255,.2);box-shadow:0 14px 30px rgba(0,0,0,.25)}
+.acc-card:active{transform:translateY(-2px) scale(.97)}
+.acc-avatar{font-size:46px;width:84px;height:84px;border-radius:50%;display:flex;align-items:center;justify-content:center;animation:accFloat 2.6s ease-in-out infinite}
+.acc-card:nth-child(1) .acc-avatar{background:rgba(255,214,102,.28);animation-delay:0s}
+.acc-card:nth-child(2) .acc-avatar{background:rgba(147,197,253,.28);animation-delay:.3s}
+.acc-card:nth-child(3) .acc-avatar{background:rgba(216,180,254,.28);animation-delay:.6s}
+.acc-name{font-family:var(--font-d);font-size:15px;font-weight:700;color:#fff}
+.acc-desc{font-size:11px;color:rgba(255,255,255,.75)}
+.acc-keys-pill{font-size:10px;font-weight:700;color:#fff;background:rgba(255,255,255,.22);padding:3px 10px;border-radius:20px;margin-top:2px}
+.acc-online-badge{font-size:10.5px;font-weight:600;color:rgba(255,255,255,.9);margin-top:5px;display:flex;align-items:center;gap:4px}
+.acc-online-badge .dot-live-sm{width:6px;height:6px;border-radius:50%;background:#4ade80;flex-shrink:0;box-shadow:0 0 0 rgba(74,222,128,.5);animation:dotPulse 1.6s ease-in-out infinite}
+@keyframes dotPulse{0%{box-shadow:0 0 0 0 rgba(74,222,128,.55)}70%{box-shadow:0 0 0 6px rgba(74,222,128,0)}100%{box-shadow:0 0 0 0 rgba(74,222,128,0)}}
+@keyframes accFloat{0%,100%{transform:translateY(0) rotate(-4deg)}50%{transform:translateY(-10px) rotate(4deg)}}
+.acc-hint{margin-top:26px;font-size:11px;color:rgba(255,255,255,.6)}
+
+/* Badge akun aktif + ganti akun, ditaruh di sidebar */
+.acc-switch-badge{display:flex;align-items:center;gap:8px;padding:8px 10px;background:rgba(255,255,255,.08);border:1px solid var(--sb-border);border-radius:10px;margin-bottom:10px;cursor:pointer;transition:background .2s}
+.acc-switch-badge:hover{background:rgba(255,255,255,.16)}
+.acc-switch-badge .asb-avatar{font-size:16px;width:26px;height:26px;border-radius:50%;background:rgba(255,255,255,.16);display:flex;align-items:center;justify-content:center;flex-shrink:0}
+.acc-switch-badge .asb-text{flex:1;text-align:left;min-width:0}
+.acc-switch-badge .asb-name{font-size:11.5px;font-weight:700;color:var(--sb-text);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.acc-switch-badge .asb-action{font-size:9.5px;color:var(--sb-text3)}
+</style>
+</head>
+<body>
+
+<!-- ============ ACCOUNT PICKER (tanpa password) ============ -->
+<div class="acc-picker-overlay" id="acc-picker-overlay">
+  <div class="acc-picker-box">
+    <div class="ap-title">Smart Generator MI Khadijah</div>
+    <div class="ap-sub">Pilih akun untuk mulai membuat soal. Tidak perlu password — cukup klik.</div>
+    <div class="acc-grid">
+      <div class="acc-card" onclick="selectAccount('akun1')">
+        <div class="acc-avatar">😴</div>
+        <div class="acc-name">EkaBot</div>
+        <div class="acc-online-badge" id="online-badge-akun1"><span class="dot-live-sm"></span> – online</div>
+      </div>
+      <div class="acc-card" onclick="selectAccount('akun2')">
+        <div class="acc-avatar">😪</div>
+        <div class="acc-name">DwiGen</div>
+        <div class="acc-online-badge" id="online-badge-akun2"><span class="dot-live-sm"></span> – online</div>
+      </div>
+      <div class="acc-card" onclick="selectAccount('akun3')">
+        <div class="acc-avatar">🥱</div>
+        <div class="acc-name">TriLab</div>
+        <div class="acc-online-badge" id="online-badge-akun3"><span class="dot-live-sm"></span> – online</div>
+      </div>
+    </div>
+    <div class="acc-hint">Setiap akun punya kumpulan API Key sendiri, jadi tidak akan saling bentrok/tertimpa.</div>
+  </div>
+</div>
+
+<!-- MOBILE TOP BAR -->
+<div class="mobile-topbar no-print">
+  <button class="mb-hamburger" onclick="toggleSidebar()"><i class="fa-solid fa-bars"></i></button>
+  <div class="mb-title">AI GenSoal</div>
+  <div class="mb-badge"><i class="fa-solid fa-robot"></i> v2.0</div>
+</div>
+
+<div class="sb-overlay no-print" id="sb-overlay" onclick="toggleSidebar()"></div>
+
+<div class="shell no-print">
+
+<!-- SIDEBAR -->
+<aside class="sidebar" id="sidebar">
+  <div class="sb-brand">
+    <div class="sb-logo-row">
+      <div class="sb-icon"><i class="fa-solid fa-robot"></i></div>
+      <div>
+        <div class="sb-name">AI GenSoal</div>
+        <div class="sb-tag">Smart Generator MI Khadijah</div>
+      </div>
+    </div>
+  </div>
+  <nav class="sb-nav">
+    <div class="nav-lbl">Menu Utama</div>
+    <button class="nav-btn active" id="btn-input-soal" onclick="switchTab('input-soal');closeSidebarMobile()">
+      <i class="fa-solid fa-pen-to-square"></i> Input Soal
+    </button>
+    <button class="nav-btn" id="btn-edit-kop" onclick="switchTab('edit-kop');closeSidebarMobile()">
+      <i class="fa-solid fa-heading"></i> Edit Kop Ujian
+    </button>
+    <button class="nav-btn" id="btn-api-settings" onclick="switchTab('api-settings');closeSidebarMobile()">
+      <i class="fa-solid fa-key"></i> Pengaturan API
+      <span class="key-badge" id="key-count-badge">0</span>
+    </button>
+
+  </nav>
+  <div class="sb-footer">
+    <div class="acc-switch-badge" onclick="switchAccount()" title="Ganti akun">
+      <div class="asb-avatar" id="asb-avatar">👤</div>
+      <div class="asb-text">
+        <div class="asb-name" id="asb-name">Akun</div>
+        <div class="asb-action" id="asb-online">🟢 – online</div>
+      </div>
+      <i class="fa-solid fa-right-left" style="color:var(--sb-text3);font-size:11px"></i>
+    </div>
+    <div class="theme-toggle">
+      <div class="toggle-wrap">
+        <button class="toggle-opt" id="t-light" onclick="setTheme('light')">
+          <i class="fa-solid fa-sun"></i> Cerah
+        </button>
+        <button class="toggle-opt" id="t-dark" onclick="setTheme('dark')">
+          <i class="fa-solid fa-moon"></i> Gelap
+        </button>
+      </div>
+    </div>
+    <div class="ver"><span class="dot-live"></span> Versi 2.0 &copy; 2026 Kang Zuhrie</div>
+  </div>
+</aside>
+
+<!-- MAIN WRAP -->
+<div class="main-wrap">
+
+  <!-- FORM PANEL -->
+  <div class="form-panel">
+
+    <!-- ============ TAB INPUT SOAL ============ -->
+    <div id="tab-input-soal" class="cw">
+      <div>
+        <div class="ph-title">Generate Soal Ujian</div>
+        <div class="ph-sub">Isi parameter di bawah, lalu klik Generate untuk membuat soal secara otomatis.</div>
+      </div>
+
+      <!-- Card Konteks -->
+      <div class="card">
+        <div class="ch"><div class="ci b"><i class="fa-solid fa-book-open"></i></div><div class="ct">Konteks Pembelajaran</div></div>
+        <div class="g2" style="margin-bottom:13px">
+          <div class="fg">
+            <label class="fl">Kurikulum</label>
+            <select id="kurikulum" onchange="updatePreview()">
+              <option value="Kurikulum Merdeka">Kurikulum Merdeka</option>
+              <option value="Kurikulum 2013">Kurikulum 2013 (K13)</option>
+            </select>
+          </div>
+          <div class="fg">
+            <label class="fl">Karakteristik / HOTS</label>
+            <select id="karakteristik">
+              <option value="Campuran (Mudah, Sedang, Sulit)">Campuran — Standar</option>
+              <option value="Dominan HOTS (High Order Thinking Skills)">Dominan HOTS</option>
+              <option value="LOTS (Low Order Thinking Skills)">LOTS — Dasar</option>
+            </select>
+          </div>
+        </div>
+        <div class="g3" style="margin-bottom:13px">
+          <div class="fg">
+            <label class="fl">Jenjang</label>
+            <select id="jenjang" onchange="updateKelas();updatePreview()">
+              <option value="SD/MI">SD / MI</option>
+              <option value="SMP/MTs">SMP / MTs</option>
+              <option value="SMA/MA">SMA / MA</option>
+            </select>
+          </div>
+          <div class="fg">
+            <label class="fl">Kelas</label>
+            <select id="kelas" onchange="updatePreview()"></select>
+          </div>
+          <div class="fg">
+            <label class="fl">Semester</label>
+            <select id="semester" onchange="updatePreview()">
+              <option value="Ganjil">Ganjil</option>
+              <option value="Genap">Genap</option>
+            </select>
+          </div>
+        </div>
+        <div class="g2">
+          <div class="fg">
+            <label class="fl">Mata Pelajaran<span class="req">*</span></label>
+            <input type="text" id="mapel" placeholder="Contoh: Fiqih" oninput="updatePreview();updateTipeHint()">
+          </div>
+          <div class="fg">
+            <label class="fl">Bab / Materi Pokok<span class="req">*</span></label>
+            <input type="text" id="materi" placeholder="Contoh: Thaharah">
+          </div>
+        </div>
+      </div>
+
+      <!-- Card Struktur -->
+      <div class="card">
+        <div class="ch"><div class="ci g"><i class="fa-solid fa-list-ol"></i></div><div class="ct">Struktur Soal</div></div>
+        <div class="rb">
+          <div class="rh"><span class="rbadge">I</span><span class="rt">Bagian Pertama</span></div>
+          <div class="g2">
+            <div class="fg"><label class="fl">Jenis Soal</label>
+              <select id="tipe_r1" onchange="updateTipeHint()"><option value="Pilihan Ganda">Pilihan Ganda</option><option value="Pilihan Ganda Kompleks">Pilihan Ganda Kompleks</option><option value="Campuran">Campuran (PG + Kompleks)</option></select>
+            </div>
+            <div class="fg"><label class="fl">Jumlah Soal</label>
+              <input type="number" id="jumlah_r1" value="10" min="1" max="50">
+            </div>
+          </div>
+          <div class="fhint" id="hint_r1" style="margin-top:6px"></div>
+        </div>
+        <div class="rb">
+          <div class="rh"><span class="rbadge">II</span><span class="rt">Bagian Kedua</span><span class="ropt">Opsional</span></div>
+          <div class="g2">
+            <div class="fg"><label class="fl">Jenis Soal</label>
+              <select id="tipe_r2" onchange="updateTipeHint()"><option value="Isian Singkat">Isian Singkat</option><option value="Menjodohkan">Menjodohkan</option><option value="Campuran">Campuran (Isian + Menjodohkan)</option></select>
+            </div>
+            <div class="fg"><label class="fl">Jumlah Soal <span class="fhint">(0 = tidak ada)</span></label>
+              <input type="number" id="jumlah_r2" value="5" min="0" max="20">
+            </div>
+          </div>
+          <div class="fhint" id="hint_r2" style="margin-top:6px"></div>
+        </div>
+        <div class="rb">
+          <div class="rh"><span class="rbadge">III</span><span class="rt">Bagian Ketiga</span><span class="ropt">Opsional</span></div>
+          <div class="g2">
+            <div class="fg"><label class="fl">Jenis Soal</label>
+              <select id="tipe_r3"><option value="Uraian">Uraian / Essay</option></select>
+            </div>
+            <div class="fg"><label class="fl">Jumlah Soal <span class="fhint">(0 = tidak ada)</span></label>
+              <input type="number" id="jumlah_r3" value="5" min="0" max="10">
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Card Gambar Pendukung -->
+      <div class="card">
+        <div class="ch"><div class="ci v"><i class="fa-solid fa-image"></i></div><div class="ct">Gambar Pendukung Soal</div></div>
+        <div class="g2" style="margin-bottom:13px">
+          <div class="fg">
+            <label class="fl">Cantumkan Gambar</label>
+            <select id="gambar_mode" onchange="updateJenisGambarState()">
+              <option value="tidak_ada">Tidak ada</option>
+              <option value="otomatis" selected>Otomatis (AI menentukan)</option>
+              <option value="semua">Semua soal bergambar</option>
+              <option value="maks1">Maksimal 1 gambar</option>
+              <option value="maks2">Maksimal 2 gambar</option>
+              <option value="maks3">Maksimal 3 gambar</option>
+              <option value="maks4">Maksimal 4 gambar</option>
+            </select>
+          </div>
+          <div class="fg">
+            <label class="fl">Jenis Gambar</label>
+            <select id="jenis_gambar">
+              <option value="otomatis">Otomatis</option>
+              <option value="foto">Foto</option>
+              <option value="ilustrasi">Ilustrasi</option>
+              <option value="diagram">Diagram</option>
+              <option value="ikon">Ikon</option>
+              <option value="peta">Peta</option>
+            </select>
+          </div>
+        </div>
+        <div class="fhint" id="gambar-hint">Gambar dicari otomatis dari Pixabay &amp; Wikimedia Commons berdasarkan isi soal, lalu disisipkan sebelum teks soal di PDF &amp; Word. Atur API Key Pixabay di menu <strong>Pengaturan API</strong> (opsional — tanpa key, sistem tetap mencoba Wikimedia Commons).</div>
+      </div>
+
+      <!-- Model info -->
+      <div class="model-info-box">
+        <div class="model-icon"><i class="fa-solid fa-microchip"></i></div>
+        <div>
+          <div class="model-name">Gemini 3.1 Flash-Lite — Cepat &amp; Mutakhir</div>
+          <div class="model-desc">Model AI paten yang digunakan. API Key dirotasi otomatis setiap 2 pemakaian.</div>
+        </div>
+      </div>
+
+      <div class="qbanner" id="qbanner" style="display:none">
+        <div class="qbi"><i class="fa-solid fa-triangle-exclamation"></i></div>
+        <div>
+          <div class="qbt">Kuota Gratis Gemini Habis</div>
+          <div class="qbm">
+            &bull; Tunggu reset kuota harian/bulanan<br>
+            &bull; Ganti API Key di menu <strong>Pengaturan API</strong><br>
+            &bull; Aktifkan billing di <a href="https://aistudio.google.com/app/apikey" target="_blank">Google AI Studio</a>
+          </div>
+        </div>
+      </div>
+
+      <div class="btn-row">
+        <button class="btn-gen" id="btn-generate" onclick="generateAI()">
+          <i class="fa-solid fa-wand-magic-sparkles"></i> Generate Soal
+        </button>
+      </div>
+    </div><!-- /tab-input-soal -->
+
+    <!-- ============ TAB EDIT KOP ============ -->
+    <div id="tab-edit-kop" class="cw" style="display:none">
+      <div>
+        <div class="ph-title">Pengaturan Kop Ujian</div>
+        <div class="ph-sub">Konfigurasi tampilan kepala soal. Preview langsung terlihat di panel kanan.</div>
+      </div>
+      <div class="card">
+        <div class="ch"><div class="ci a"><i class="fa-solid fa-school"></i></div><div class="ct">Identitas Sekolah</div></div>
+
+        <div class="fg" style="margin-bottom:14px">
+          <label class="fl">Logo Instansi</label>
+          <div class="logo-upload-area" id="logo-drop-area">
+            <input type="file" id="logo-file-input" accept="image/*" onchange="handleLogoUpload(event)">
+            <img id="logo-preview-img" class="upload-preview" src="" alt="Logo">
+            <div id="upload-placeholder">
+              <div class="upload-icon"><i class="fa-solid fa-cloud-arrow-up"></i></div>
+              <div class="upload-txt">Klik atau seret gambar ke sini</div>
+              <div class="upload-sub">PNG, JPG, SVG — maks 2 MB</div>
+            </div>
+            <div class="upload-actions" id="logo-actions" style="display:none">
+              <button class="btn-sm" onclick="triggerLogoInput(event)"><i class="fa-solid fa-arrow-up-from-bracket"></i> Ganti</button>
+              <button class="btn-sm danger" onclick="removeLogo(event)"><i class="fa-solid fa-trash"></i> Hapus</button>
+            </div>
+          </div>
+          <span class="fhint">Logo disimpan sebagai base64 di Spreadsheet (sheet "Pengaturan").</span>
+        </div>
+
+        <div class="fg" style="margin-bottom:13px">
+          <label class="fl">Judul Baris 1 — Nama Instansi Atas</label>
+          <input type="text" id="kop_instansi_atas" value="MI KHADIJAH TEGAL SARI KAPAS SUKOMORO NGANJUK" oninput="updatePreview()">
+        </div>
+        <div class="fg" style="margin-bottom:13px">
+          <label class="fl">Judul Baris 2 — Jenis Penilaian</label>
+          <input type="text" id="kop_penilaian" value="PENILAIAN AKHIR SEMESTER GANJIL" oninput="updatePreview()">
+        </div>
+        <div class="g2" style="margin-bottom:13px">
+          <div class="fg">
+            <label class="fl">Tahun Pelajaran</label>
+            <input type="text" id="kop_tahun" value="2025/2026" oninput="updatePreview()">
+          </div>
+          <div class="fg">
+            <label class="fl">Waktu (menit)</label>
+            <input type="text" id="kop_waktu" value="60" oninput="updatePreview()">
+          </div>
+        </div>
+        <div class="fg" style="margin-bottom:0">
+          <label class="fl">Hari, Tanggal <span class="fhint">(opsional)</span></label>
+          <input type="text" id="kop_hari" placeholder="Contoh: Senin, 15 Desember 2025" oninput="updatePreview()">
+        </div>
+
+        <div class="ibanner" style="margin-top:14px">
+          <i class="fa-solid fa-circle-info"></i>
+          <span>Kolom Mata Pelajaran dan Kelas diisi otomatis dari tab <strong>Input Soal</strong>. Kolom TTD ditampilkan otomatis.</span>
+        </div>
+      </div>
+
+      <!-- Mini preview inside tab for mobile -->
+      <div class="card" style="display:none" id="kop-preview-mobile-card">
+        <div class="ch"><div class="ci v"><i class="fa-solid fa-eye"></i></div><div class="ct">Preview Kop</div></div>
+        <div id="kop-preview-wrap-mobile"></div>
+      </div>
+    </div><!-- /tab-edit-kop -->
+
+    <!-- ============ TAB PENGATURAN API ============ -->
+    <div id="tab-api-settings" class="cw" style="display:none">
+      <div>
+        <div class="ph-title">Pengaturan API Keys</div>
+        <div class="ph-sub" id="api-settings-ph-sub">Simpan API Key Gemini untuk akun ini. Key dipakai rotasi otomatis setiap 2 kali pemakaian.</div>
+      </div>
+
+      <div class="card">
+        <div class="ch">
+          <div class="ci v"><i class="fa-solid fa-key"></i></div>
+          <div class="ct">Daftar API Key Gemini</div>
+          <div class="ct-sub"><a href="https://aistudio.google.com/app/apikey" target="_blank" style="color:var(--accent-1);text-decoration:none;font-size:11px"><i class="fa-solid fa-external-link-alt"></i> Dapatkan Key</a></div>
+        </div>
+
+        <div id="key-status-bar" class="key-status-bar" style="display:none;margin-bottom:10px">
+          <i class="fa-solid fa-circle-dot"></i>
+          <span>Key aktif saat ini: <strong id="active-key-display">—</strong> &nbsp;|&nbsp; Penggunaan: <strong id="usage-count-display">0</strong>/2</span>
+        </div>
+
+        <div class="apikey-grid" id="apikey-grid">
+          <!-- slots generated by JS -->
+        </div>
+
+        <div class="key-rotation-info">
+          <i class="fa-solid fa-rotate"></i>
+          <span>Rotasi otomatis: setelah 2 kali generate, sistem berpindah ke key berikutnya yang tersimpan. Key yang sudah disimpan tidak bisa terhapus kecuali menekan tombol hapus.</span>
+        </div>
+      </div>
+
+      <div class="model-info-box">
+        <div class="model-icon"><i class="fa-solid fa-lock"></i></div>
+        <div>
+          <div class="model-name">Model Terkunci: Gemini 3.1 Flash-Lite</div>
+          <div class="model-desc">Model dipilih secara paten untuk efisiensi & hemat kuota. Tidak bisa diubah.</div>
+        </div>
+      </div>
+
+      <div class="card">
+        <div class="ch">
+          <div class="ci v"><i class="fa-solid fa-image"></i></div>
+          <div class="ct">API Key Pixabay (Gambar Otomatis)</div>
+          <div class="ct-sub"><a href="https://pixabay.com/api/docs/" target="_blank" style="color:var(--accent-1);text-decoration:none;font-size:11px"><i class="fa-solid fa-external-link-alt"></i> Dapatkan Key</a></div>
+        </div>
+        <div class="fg">
+          <label class="fl">Pixabay API Key <span class="fhint">(opsional — dipakai bersama semua akun)</span></label>
+          <div style="display:flex;gap:8px">
+            <input type="text" id="pixabay-key-input" placeholder="Masukkan API Key Pixabay" style="flex:1">
+            <button onclick="savePixabayKey()" style="background:var(--accent-1);color:#fff;border:none;padding:0 16px;border-radius:6px;font-size:12px;font-weight:600;cursor:pointer">Simpan</button>
+          </div>
+        </div>
+        <div class="fhint" style="margin-top:6px">Tanpa key ini, pencarian gambar otomatis tetap berjalan menggunakan Wikimedia Commons sebagai sumber gambar.</div>
+      </div>
+    </div><!-- /tab-api-settings -->
+
+  </div><!-- /form-panel -->
+
+  <!-- PREVIEW PANEL (desktop) -->
+  <div class="preview-panel">
+    <div class="preview-header">
+      <div class="preview-title"><i class="fa-solid fa-eye"></i> Preview Hasil Generate</div>
+      <div class="prev-theme-wrap">
+        <button class="prev-theme-btn on" id="pv-light" onclick="setPreviewTheme('light')"><i class="fa-solid fa-sun"></i> Cerah</button>
+        <button class="prev-theme-btn" id="pv-dark" onclick="setPreviewTheme('dark')"><i class="fa-solid fa-moon"></i> Gelap</button>
+      </div>
+    </div>
+    <div class="preview-body" id="preview-body-main">
+      <div id="kop-preview-wrap">
+        <div class="preview-placeholder">
+          <i class="fa-solid fa-wand-magic-sparkles"></i>
+          <p>Preview kop ujian akan tampil di sini.<br>Generate soal untuk melihat hasil lengkap.</p>
+        </div>
+      </div>
+    </div>
+  </div>
+
+</div><!-- /main-wrap -->
+</div><!-- /shell -->
+
+<!-- LOADING -->
+<div class="lov no-print" id="loading-overlay">
+  <div class="lbox">
+    <div class="spin"></div>
+    <div class="ltitle">Menyusun Soal...</div>
+    <div class="lsub">AI sedang membaca materi dan merangkai soal ujian. Proses biasanya 10–25 detik.</div>
+    <div class="dots"><span></span><span></span><span></span></div>
+  </div>
+</div>
+
+<!-- PRINT DIALOG -->
+<div class="lov no-print" id="print-dialog" style="display:none" onclick="if(event.target===this)closePrintDialog()">
+  <div class="lbox" style="max-width:340px;text-align:left">
+    <div style="display:flex;align-items:center;gap:10px;margin-bottom:16px">
+      <div class="ci v"><i class="fa-solid fa-print"></i></div>
+      <div style="font-family:var(--font-d);font-size:15px;font-weight:700;color:var(--t1)">Cetak / Export Soal</div>
+    </div>
+    <p style="font-size:12.5px;color:var(--t2);margin-bottom:14px">Pilih format output yang diinginkan:</p>
+    <div style="display:flex;flex-direction:column;gap:8px">
+      <button onclick="doPrint('pdf')" style="display:flex;align-items:center;gap:11px;padding:12px 16px;border-radius:var(--radius-md);border:1.5px solid rgba(239,68,68,.25);background:rgba(239,68,68,.05);cursor:pointer;text-align:left;font-family:var(--font-b);transition:all .2s" onmouseover="this.style.background='rgba(239,68,68,.1)'" onmouseout="this.style.background='rgba(239,68,68,.05)'">
+        <div style="width:36px;height:36px;border-radius:9px;background:rgba(239,68,68,.12);color:#EF4444;display:flex;align-items:center;justify-content:center;font-size:16px;flex-shrink:0"><i class="fa-solid fa-file-pdf"></i></div>
+        <div><div style="font-size:13px;font-weight:700;color:var(--t1)">Cetak / Simpan PDF</div><div style="font-size:11px;color:var(--tm);margin-top:1px">Buka dialog print browser → Save as PDF</div></div>
+      </button>
+      <button onclick="doPrint('word')" style="display:flex;align-items:center;gap:11px;padding:12px 16px;border-radius:var(--radius-md);border:1.5px solid rgba(37,99,235,.25);background:rgba(37,99,235,.05);cursor:pointer;text-align:left;font-family:var(--font-b);transition:all .2s" onmouseover="this.style.background='rgba(37,99,235,.1)'" onmouseout="this.style.background='rgba(37,99,235,.05)'">
+        <div style="width:36px;height:36px;border-radius:9px;background:rgba(37,99,235,.12);color:#2563EB;display:flex;align-items:center;justify-content:center;font-size:16px;flex-shrink:0"><i class="fa-solid fa-file-word"></i></div>
+        <div><div style="font-size:13px;font-weight:700;color:var(--t1)">Download Word (.docx)</div><div style="font-size:11px;color:var(--tm);margin-top:1px">Unduh file Word yang bisa diedit</div></div>
+      </button>
+    </div>
+    <button onclick="closePrintDialog()" style="margin-top:14px;width:100%;padding:9px;border-radius:var(--radius-sm);border:1.5px solid var(--border);background:var(--input);color:var(--t2);font-family:var(--font-b);font-size:13px;cursor:pointer;transition:all .2s" onmouseover="this.style.background='var(--border)'" onmouseout="this.style.background='var(--input)'">Batal</button>
+  </div>
+</div>
+
+<!-- TOASTS -->
+<div id="tc" class="no-print"></div>
+
+<!-- PRINT AREA - hidden, only shown during print -->
+<div id="print-area" style="display:none"></div>
+
+<!-- PREVIEW SOAL MODAL -->
+<div class="lov no-print" id="preview-soal-modal" style="display:none" onclick="if(event.target===this)closePreviewSoalModal()">
+  <div style="background:var(--card);border:1px solid var(--border);border-radius:var(--radius-lg);width:90%;max-width:800px;max-height:90vh;display:flex;flex-direction:column;box-shadow:var(--shadow-lg)">
+    <div style="padding:16px 20px;border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between;flex-shrink:0">
+      <div style="font-family:var(--font-d);font-size:16px;font-weight:700;color:var(--t1);display:flex;align-items:center;gap:9px">
+        <div class="ci v"><i class="fa-solid fa-eye"></i></div> Preview Hasil Soal
+      </div>
+      <div style="display:flex;gap:8px;align-items:center">
+        <button onclick="doPrint('pdf')" style="display:inline-flex;align-items:center;gap:6px;padding:8px 16px;border-radius:var(--radius-sm);border:1.5px solid rgba(239,68,68,.25);background:rgba(239,68,68,.07);color:#EF4444;font-family:var(--font-b);font-size:12px;font-weight:600;cursor:pointer;transition:all .2s" onmouseover="this.style.background='rgba(239,68,68,.15)'" onmouseout="this.style.background='rgba(239,68,68,.07)'">
+          <i class="fa-solid fa-file-pdf"></i> Cetak / PDF
+        </button>
+        <button onclick="doPrint('word')" style="display:inline-flex;align-items:center;gap:6px;padding:8px 16px;border-radius:var(--radius-sm);border:1.5px solid rgba(37,99,235,.25);background:rgba(37,99,235,.07);color:#2563EB;font-family:var(--font-b);font-size:12px;font-weight:600;cursor:pointer;transition:all .2s" onmouseover="this.style.background='rgba(37,99,235,.15)'" onmouseout="this.style.background='rgba(37,99,235,.07)'">
+          <i class="fa-solid fa-file-word"></i> Word
+        </button>
+        <button onclick="closePreviewSoalModal()" style="width:32px;height:32px;border-radius:8px;border:1px solid var(--border);background:var(--input);color:var(--t2);cursor:pointer;font-size:14px;display:flex;align-items:center;justify-content:center">
+          <i class="fa-solid fa-xmark"></i>
+        </button>
+      </div>
+    </div>
+    <div style="flex:1;overflow-y:auto;padding:20px;background:#f8f8f8">
+      <div id="preview-soal-content" style="background:#fff;padding:1cm 1.5cm 0.5cm 1.5cm;min-height:500px;box-shadow:0 2px 16px rgba(0,0,0,.12);font-family:'Times New Roman',Times,serif;color:#000;font-size:11pt;line-height:1.5"></div>
+    </div>
+  </div>
+</div>
+
+<script>
+// ===================== KONEKSI KE APPS SCRIPT (SHEET SEBAGAI DATABASE) =====================
+// Ganti nilai di bawah ini dengan URL Web App hasil "Deploy > New deployment" (harus diakhiri "/exec").
+// Selama halaman ini masih dibuka LEWAT Apps Script itu sendiri (doGet tanpa ?action),
+// deteksi otomatis di bawah akan memakai URL exec saat ini sehingga tidak perlu diisi manual.
+// Kalau index.html ini dihosting terpisah (di luar Apps Script), WAJIB diisi manual.
+var GAS_API_URL = (function(){
+  try{
+    var href = (top && top.location && top.location.href) ? top.location.href : window.location.href;
+    if(/\/exec(\?|$)/.test(href)) return href.split('?')[0];
+  }catch(e){}
+  return ''; // <-- Isi manual di sini jika index.html dihosting di luar Apps Script, contoh:
+             // 'https://script.google.com/macros/s/AKfycbwrOwJ8HjqW35tXWf3doaGSR_5uIxbGp4wGUR3Ko1YsIxgMplSxbhRV0FPicXM9pLA/exec'
+})();
+
+function isGasConfigured(){ return !!GAS_API_URL; }
+
+/**
+ * Memanggil endpoint JSON di Code.gs (doGet/doPost) yang membaca/menulis
+ * Google Sheet sebagai database. method 'GET' dipakai untuk pembacaan ringan,
+ * method 'POST' (dikirim sebagai text/plain agar tidak kena CORS preflight)
+ * dipakai untuk penulisan atau payload besar (mis. generate soal, logo).
+ */
+async function callGAS(action, params, method){
+  params = params || {};
+  method = method || 'GET';
+  if(!isGasConfigured()) throw new Error('GAS_API_URL belum diatur.');
+
+  var res;
+  if(method === 'GET'){
+    var qs = new URLSearchParams(Object.assign({ action: action }, params)).toString();
+    res = await fetch(GAS_API_URL + '?' + qs, { method: 'GET' });
+  } else {
+    res = await fetch(GAS_API_URL, {
+      method: 'POST',
+      headers: { 'Content-Type': 'text/plain;charset=utf-8' },
+      body: JSON.stringify(Object.assign({ action: action }, params)),
+      keepalive: true
+    });
+  }
+  var json = await res.json();
+  if(!json || json.success !== true) throw new Error((json && json.error) || 'Gagal menghubungi server.');
+  return json.data;
+}
+
+// ===================== MOBILE SIDEBAR =====================
+function toggleSidebar(){
+  const sb=document.getElementById('sidebar'),ov=document.getElementById('sb-overlay');
+  sb.classList.toggle('open');ov.classList.toggle('visible');
+}
+function closeSidebarMobile(){
+  if(window.innerWidth<=700){
+    document.getElementById('sidebar').classList.remove('open');
+    document.getElementById('sb-overlay').classList.remove('visible');
+  }
+}
+
+// ===================== THEME =====================
+function setTheme(t){
+  document.documentElement.setAttribute('data-theme',t);
+  localStorage.setItem('gensoal-theme',t);
+  document.getElementById('t-dark').classList.toggle('on',t==='dark');
+  document.getElementById('t-light').classList.toggle('on',t==='light');
+}
+(function(){
+  const saved=localStorage.getItem('gensoal-theme')||'light';
+  setTheme(saved);
+})();
+
+// ===================== TAB =====================
+function switchTab(id){
+  ['input-soal','edit-kop','api-settings'].forEach(t=>{
+    document.getElementById('tab-'+t).style.display='none';
+    const btn=document.getElementById('btn-'+t);
+    if(btn) btn.classList.remove('active');
+  });
+  document.getElementById('tab-'+id).style.display='flex';
+  const activeBtn=document.getElementById('btn-'+id);
+  if(activeBtn) activeBtn.classList.add('active');
+  // Show mobile kop preview card when on edit-kop
+  const mobileCard=document.getElementById('kop-preview-mobile-card');
+  if(mobileCard) mobileCard.style.display=(id==='edit-kop'&&window.innerWidth<=900)?'block':'none';
+}
+
+// ===================== KELAS =====================
+function updateKelas(){
+  const j=document.getElementById('jenjang').value,s=document.getElementById('kelas');
+  s.innerHTML='';
+  if(j==='SD/MI'){for(let i=1;i<=6;i++)s.innerHTML+=`<option value="${i}">Kelas ${i}</option>`}
+  else if(j==='SMP/MTs'){['VII (1 SMP)','VIII (2 SMP)','IX (3 SMP)'].forEach((v,i)=>{const rm=['VII','VIII','IX'][i];s.innerHTML+=`<option value="${rm}">Kelas ${v}</option>`})}
+  else{['X (1 SMA)','XI (2 SMA)','XII (3 SMA)'].forEach((v,i)=>{const rm=['X','XI','XII'][i];s.innerHTML+=`<option value="${rm}">Kelas ${v}</option>`})}
+}
+
+// ===================== LOGO =====================
+let logoBase64='';
+function handleLogoUpload(e){
+  const f=e.target.files[0]; if(!f) return;
+  if(f.size>2*1024*1024){showToast({type:'error',title:'File Terlalu Besar',message:'Ukuran logo maksimal 2 MB.'}); return;}
+  const r=new FileReader();
+  r.onload=ev=>{
+    logoBase64=ev.target.result;
+    document.getElementById('logo-preview-img').src=logoBase64;
+    document.getElementById('logo-preview-img').classList.add('show');
+    document.getElementById('upload-placeholder').style.display='none';
+    document.getElementById('logo-actions').style.display='flex';
+    document.getElementById('logo-drop-area').classList.add('has-logo');
+    updatePreview();
+    if(isGasConfigured()){
+      callGAS('saveLogo',{value:logoBase64},'POST')
+        .then(()=>showToast({type:'success',title:'Logo Tersimpan',message:'Logo berhasil disimpan ke Spreadsheet.',duration:3000}))
+        .catch(()=>showToast({type:'warning',title:'Logo Tidak Tersimpan',message:'Gagal menyimpan logo ke Spreadsheet. Logo tetap aktif untuk sesi ini.',duration:4000}));
+    }
+  };
+  r.readAsDataURL(f);
+}
+function triggerLogoInput(e){e.preventDefault();e.stopPropagation();document.getElementById('logo-file-input').click()}
+function removeLogo(e){
+  e.preventDefault();e.stopPropagation();
+  logoBase64='';
+  document.getElementById('logo-preview-img').src='';
+  document.getElementById('logo-preview-img').classList.remove('show');
+  document.getElementById('upload-placeholder').style.display='';
+  document.getElementById('logo-actions').style.display='none';
+  document.getElementById('logo-drop-area').classList.remove('has-logo');
+  document.getElementById('logo-file-input').value='';
+  updatePreview();
+}
+
+// ===================== PRESENCE / ONLINE COUNTER =====================
+// Catatan: ini BUKAN deteksi IP (Apps Script Web App tidak menyediakan IP
+// pengunjung ke server). Ini menghitung sesi tab yang masih aktif (heartbeat)
+// per akun, yang untuk kebutuhan "berapa yang sedang online" justru lebih akurat.
+function getSessionId(){
+  let sid = sessionStorage.getItem('gensoal-session-id');
+  if(!sid){
+    sid = (window.crypto&&crypto.randomUUID) ? crypto.randomUUID() : ('sid-'+Date.now()+'-'+Math.random().toString(36).slice(2));
+    sessionStorage.setItem('gensoal-session-id', sid);
+  }
+  return sid;
+}
+const SESSION_ID = getSessionId();
+const PRESENCE_TICK_MS = 10000; // heartbeat + refresh badge online setiap 10 detik
+
+function sendHeartbeat(){
+  if(!currentAccount) return;
+  if(isGasConfigured()){
+    callGAS('updatePresence',{accountId:currentAccount,sessionId:SESSION_ID},'POST').catch(()=>{});
+  }
+}
+
+function refreshOnlineBadges(counts){
+  ['akun1','akun2','akun3'].forEach(id=>{
+    const el=document.getElementById('online-badge-'+id);
+    if(el) el.innerHTML = `<span class="dot-live-sm"></span> ${counts[id]||0} online`;
+  });
+  if(currentAccount){
+    const cur=document.getElementById('asb-online');
+    if(cur) cur.textContent = `🟢 ${counts[currentAccount]||0} online di akun ini`;
+  }
+}
+
+function pollOnlineCounts(){
+  if(!isGasConfigured()) return;
+  callGAS('getOnlineCounts',{},'GET')
+    .then(data=>{ try{ refreshOnlineBadges(data||{}); }catch(e){} })
+    .catch(()=>{});
+}
+
+function presenceTick(){
+  sendHeartbeat();
+  pollOnlineCounts();
+}
+
+// ===================== AKUN (tanpa password) =====================
+// Slot key ini HARUS sinkron dengan ACCOUNT_KEY_RANGES di code.gs (backend)
+const ACCOUNT_CONFIG = {
+  akun1:{label:'EkaBot', emoji:'😴', keyCount:4, offset:0},
+  akun2:{label:'DwiGen', emoji:'😪', keyCount:3, offset:4},
+  akun3:{label:'TriLab', emoji:'🥱', keyCount:3, offset:7}
+};
+let currentAccount = null;
+
+function selectAccount(id){
+  if(!ACCOUNT_CONFIG[id]) return;
+  currentAccount = id;
+  localStorage.setItem('gensoal-selected-account', id);
+  document.getElementById('acc-picker-overlay').style.display='none';
+  initMainApp();
+}
+
+function switchAccount(){
+  document.getElementById('acc-picker-overlay').style.display='flex';
+}
+
+function updateAccountBadge(){
+  if(!currentAccount) return;
+  const cfg=ACCOUNT_CONFIG[currentAccount];
+  const av=document.getElementById('asb-avatar');
+  const nm=document.getElementById('asb-name');
+  if(av) av.textContent=cfg.emoji;
+  if(nm) nm.textContent=cfg.label;
+  const sub=document.getElementById('api-settings-ph-sub');
+  if(sub) sub.textContent=`Simpan hingga ${cfg.keyCount} API Key Gemini khusus untuk ${cfg.label} (slot ${cfg.offset+1}–${cfg.offset+cfg.keyCount}). Key dipakai rotasi otomatis setiap 2 kali pemakaian.`;
+}
+
+// ===================== API KEY MANAGER =====================
+let apiKeys = [];
+let currentKeyIndex = 0;    
+let currentKeyUsage = 0;    
+const USAGE_PER_KEY = 2;
+
+function getSlotCount(){
+  return currentAccount && ACCOUNT_CONFIG[currentAccount] ? ACCOUNT_CONFIG[currentAccount].keyCount : 0;
+}
+
+function loadApiKeysFromStorage(){
+  const n=getSlotCount();
+  apiKeys = Array.from({length:n}, ()=>({value:'', usageCount:0}));
+  currentKeyIndex=0; currentKeyUsage=0;
+  try{
+    const saved = localStorage.getItem('gensoal-apikeys-'+currentAccount);
+    if(saved){
+      const parsed = JSON.parse(saved);
+      if(Array.isArray(parsed)){
+        parsed.slice(0,n).forEach((k,i)=>{apiKeys[i]={value:k.value||'',usageCount:k.usageCount||0};});
+      }
+    }
+    const savedIdx = localStorage.getItem('gensoal-key-index-'+currentAccount);
+    if(savedIdx!==null) currentKeyIndex=parseInt(savedIdx)||0;
+    const savedUsage = localStorage.getItem('gensoal-key-usage-'+currentAccount);
+    if(savedUsage!==null) currentKeyUsage=parseInt(savedUsage)||0;
+  }catch(e){}
+  
+  if(isGasConfigured()){
+    callGAS('getApiKeys',{accountId:currentAccount},'GET')
+      .then(arr=>{
+        if(Array.isArray(arr)){arr.forEach((v,i)=>{if(i<n&&v)apiKeys[i].value=v});renderApiKeySlots();updateKeyBadge();}
+      })
+      .catch(()=>{});
+  }
+}
+
+function saveApiKeyToSpreadsheet(index, value){
+  if(isGasConfigured()){
+    callGAS('saveApiKey',{accountId:currentAccount,index:index,value:value},'POST').catch(()=>{});
+  }
+}
+
+function saveApiKey(index){
+  const input = document.getElementById(`apikey-input-${index}`);
+  const val = input.value.trim();
+  if(!val){showToast({type:'error',title:'API Key Kosong',message:'Masukkan API Key terlebih dahulu.'});return;}
+  apiKeys[index].value = val;
+  apiKeys[index].usageCount = 0;
+  persistApiKeys();
+  saveApiKeyToSpreadsheet(index, val);
+  renderApiKeySlots();
+  updateKeyBadge();
+  showToast({type:'success',title:'API Key Tersimpan',message:`API Key #${index+1} berhasil disimpan.`,duration:3000});
+}
+
+function deleteApiKey(index){
+  apiKeys[index].value = '';
+  apiKeys[index].usageCount = 0;
+  persistApiKeys();
+  saveApiKeyToSpreadsheet(index, '');
+  renderApiKeySlots();
+  updateKeyBadge();
+  if(currentKeyIndex===index){
+    const nextIdx=findNextValidKey(0);
+    currentKeyIndex=nextIdx>=0?nextIdx:0;
+    currentKeyUsage=0;
+    persistKeyState();
+  }
+  showToast({type:'info',title:'API Key Dihapus',message:`API Key #${index+1} dihapus.`,duration:2500});
+}
+
+function persistApiKeys(){
+  localStorage.setItem('gensoal-apikeys-'+currentAccount, JSON.stringify(apiKeys));
+}
+function persistKeyState(){
+  localStorage.setItem('gensoal-key-index-'+currentAccount, currentKeyIndex);
+  localStorage.setItem('gensoal-key-usage-'+currentAccount, currentKeyUsage);
+}
+
+// Mencari Key Valid Berikutnya (hanya di antara slot milik akun aktif)
+function findNextValidKey(startFrom){
+  const n=getSlotCount();
+  if(n===0) return -1;
+  for(let i=0;i<n;i++){
+    const idx=(startFrom+i)%n;
+    if(apiKeys[idx].value) return idx;
+  }
+  return -1;
+}
+
+function getActiveApiKey(){
+  if(!apiKeys[currentKeyIndex]?.value){
+    const nextIdx=findNextValidKey(0);
+    if(nextIdx<0) return null;
+    currentKeyIndex=nextIdx;
+    currentKeyUsage=0;
+    persistKeyState();
+  }
+  const key=apiKeys[currentKeyIndex].value;
+  return key;
+}
+
+function afterKeyUsed(){
+  currentKeyUsage++;
+  if(currentKeyUsage>=USAGE_PER_KEY){
+    const nextIdx=findNextValidKey(currentKeyIndex+1);
+    if(nextIdx>=0){
+      currentKeyIndex=nextIdx;
+    }
+    currentKeyUsage=0;
+  }
+  persistKeyState();
+  updateKeyStatusBar();
+  renderApiKeySlots();
+}
+
+// ===================== FITUR GAMBAR OTOMATIS (tambahan) =====================
+function updateJenisGambarState(){
+  const mode=document.getElementById('gambar_mode')?.value;
+  const jenisSel=document.getElementById('jenis_gambar');
+  if(!jenisSel) return;
+  jenisSel.disabled = (mode==='tidak_ada');
+}
+
+function loadPixabayKey(){
+  try{
+    const saved=localStorage.getItem('gensoal-pixabay-key');
+    if(saved){const el=document.getElementById('pixabay-key-input'); if(el) el.value=saved;}
+  }catch(e){}
+  if(isGasConfigured()){
+    callGAS('getPixabayKey',{},'GET')
+      .then(val=>{
+        if(val){
+          const el=document.getElementById('pixabay-key-input');
+          if(el) el.value=val;
+          try{localStorage.setItem('gensoal-pixabay-key',val);}catch(e){}
+        }
+      })
+      .catch(()=>{});
+  }
+}
+
+function savePixabayKey(){
+  const input=document.getElementById('pixabay-key-input');
+  const val=(input?.value||'').trim();
+  try{localStorage.setItem('gensoal-pixabay-key',val);}catch(e){}
+  if(isGasConfigured()){
+    callGAS('savePixabayKey',{value:val},'POST').catch(()=>{});
+  }
+  showToast({type:'success',title:'API Key Pixabay Tersimpan',message:val?'Pencarian gambar akan memakai Pixabay lalu Wikimedia Commons.':'Key dikosongkan, pencarian gambar hanya memakai Wikimedia Commons.',duration:4000});
+}
+
+// Menghasilkan blok <img> untuk disisipkan SEBELUM teks soal, jika item punya gambarData.
+// maxWidthPx mengatur ukuran tampilan (PDF/preview lebih kecil, Word bisa lebih besar).
+function imageBlockHtml(item, maxWidthPx){
+  if(!item || !item.gambarData) return '';
+  const w = maxWidthPx || 260;
+  const credit = item.gambarSource ? `Sumber: ${item.gambarSource}${item.gambarAuthor?(' — '+item.gambarAuthor):''}` : '';
+  return `<div style="margin:4px 0 8px 0;">`+
+    `<img src="${item.gambarData}" style="max-width:${w}px;width:100%;height:auto;display:block;border-radius:4px" />`+
+    (credit?`<div style="font-size:7.5pt;color:#777;margin-top:2px;">${credit}</div>`:'')+
+    `</div>`;
+}
+
+function updateKeyBadge(){
+  const count=apiKeys.filter(k=>k.value).length;
+  const badge=document.getElementById('key-count-badge');
+  if(badge) badge.textContent=count;
+}
+
+function updateKeyStatusBar(){
+  const bar=document.getElementById('key-status-bar');
+  const activeDisplay=document.getElementById('active-key-display');
+  const usageDisplay=document.getElementById('usage-count-display');
+  if(!bar) return;
+  const savedKeys=apiKeys.filter(k=>k.value);
+  if(savedKeys.length===0){bar.style.display='none';return;}
+  bar.style.display='flex';
+  const key=apiKeys[currentKeyIndex]?.value||'';
+  const masked=key?`Key #${currentKeyIndex+1} (${key.slice(0,8)}...)`: '—';
+  if(activeDisplay) activeDisplay.textContent=masked;
+  if(usageDisplay) usageDisplay.textContent=currentKeyUsage;
+}
+
+function renderApiKeySlots(){
+  const grid=document.getElementById('apikey-grid');
+  if(!grid||!currentAccount) return;
+  const cfg=ACCOUNT_CONFIG[currentAccount];
+  let html='';
+  for(let i=0;i<cfg.keyCount;i++){
+    const k=apiKeys[i];
+    const isActive=i===currentKeyIndex&&k.value;
+    const hasSaved=!!k.value;
+    const globalNum=cfg.offset+i+1; // nomor slot global 1-10, sesuai skema akun
+    html+=`<div class="apikey-slot${isActive?' active-key':hasSaved?' saved-key':''}">
+      <span class="apikey-num">${globalNum}</span>
+      <input class="apikey-input" type="password" id="apikey-input-${i}" 
+        value="${k.value?k.value:''}" 
+        placeholder="AIzaSy..."
+        autocomplete="off"
+        oninput="this.parentElement.classList.remove('saved-key','active-key')">
+      ${hasSaved
+        ? `<button class="apikey-del-btn" onclick="deleteApiKey(${i})" title="Hapus key ini"><i class="fa-solid fa-trash-can"></i></button>`
+        : `<button class="apikey-save-btn" onclick="saveApiKey(${i})">Simpan</button>`
+      }
+    </div>`;
+  }
+  grid.innerHTML=html;
+  updateKeyStatusBar();
+}
+
+// ===================== PRINT FORMAT =====================
+let selectedFormat='pdf';
+let lastGeneratedData=null;
+let lastGeneratedJson=null;
+let lastKop=null;
+
+function openPrintDialog(){
+  if(!lastGeneratedData||!lastGeneratedJson){
+    showToast({type:'warning',title:'Belum Ada Soal',message:'Generate soal terlebih dahulu sebelum mencetak.',duration:3000});
+    return;
+  }
+  openPreviewSoalModal();
+}
+function closePrintDialog(){document.getElementById('print-dialog').style.display='none'}
+
+function openPreviewSoalModal(){
+  if(!lastGeneratedData||!lastGeneratedJson){
+    showToast({type:'warning',title:'Belum Ada Soal',message:'Generate soal terlebih dahulu.',duration:3000});
+    return;
+  }
+  const printArea=document.getElementById('print-area');
+  document.getElementById('preview-soal-content').innerHTML=printArea.innerHTML;
+  document.getElementById('preview-soal-modal').style.display='flex';
+}
+function closePreviewSoalModal(){
+  document.getElementById('preview-soal-modal').style.display='none';
+}
+
+function doPrint(fmt){
+  closePreviewSoalModal();
+  closePrintDialog();
+  if(fmt==='pdf'){
+    const pa=document.getElementById('print-area');
+    pa.style.display='block';
+    setTimeout(()=>{
+      window.print();
+      setTimeout(()=>{pa.style.display='none';},500);
+    },150);
+  } else {
+    downloadWord();
+  }
+}
+
+// ===================== PREVIEW KOP =====================
+function getKopData(){
+  return {
+    logoB64:   logoBase64,
+    instansi:  document.getElementById('kop_instansi_atas')?.value||'',
+    penilaian: document.getElementById('kop_penilaian')?.value||'',
+    tahun:     document.getElementById('kop_tahun')?.value||'',
+    waktu:     document.getElementById('kop_waktu')?.value||'',
+    hari:      document.getElementById('kop_hari')?.value||'',
+    mapel:     document.getElementById('mapel')?.value||'...',
+    kelas:     document.getElementById('kelas')?.value||'...',
+  };
+}
+
+function buildKopHTML(kop, forPrint=false){
+  const logoHTML = kop.logoB64
+    ? `<img src="${kop.logoB64}" style="max-width:${forPrint?'72px':'62px'};max-height:${forPrint?'72px':'62px'};object-fit:contain;display:block;margin:0 auto">`
+    : `<div style="width:58px;height:58px;border:1.5px dashed #aaa;display:flex;align-items:center;justify-content:center;font-size:7pt;color:#aaa;text-align:center;margin:0 auto;line-height:1.3">Logo<br>Instansi</div>`;
+  const szWrap  = forPrint ? '' : 'font-size:9pt;';
+  const titleSz = forPrint ? 'font-size:12pt' : 'font-size:10.5pt';
+  const subSz   = forPrint ? 'font-size:11.5pt' : 'font-size:9.5pt';
+  const tpSz    = forPrint ? 'font-size:11.5pt' : 'font-size:9.5pt';
+  const tdSz    = forPrint ? '10pt' : '9pt';
+  const hdrSz   = forPrint ? '10.5pt' : '9.5pt';
+  return `
+<div style="font-family:Arial, Helvetica, sans-serif;color:#000;${szWrap}padding:${forPrint?'0':'8px 10px'}">
+  <div style="${titleSz};font-weight:bold;text-align:center;text-transform:uppercase;line-height:1.2;margin-bottom:0">${kop.instansi||'Nama Instansi'}</div>
+  <div style="${subSz};font-weight:bold;text-align:center;text-transform:uppercase;line-height:1.2;margin-bottom:0">${kop.penilaian||'Jenis Penilaian'}</div>
+  <div style="${tpSz};font-weight:bold;text-align:center;line-height:1.2;margin-bottom:4px">TAHUN PELAJARAN ${kop.tahun||'----/----'}</div>
+  <table style="width:100%;border-collapse:collapse;border:1.5px solid #000;font-size:${tdSz}">
+    <tr>
+      <td rowspan="5" style="border:1.5px solid #000;width:${forPrint?'80px':'70px'};text-align:center;vertical-align:middle;padding:3px">${logoHTML}</td>
+      <td style="border:1.5px solid #000;padding:1px 8px;font-weight:bold;white-space:nowrap;width:1%;line-height:1.2">Mata Pelajaran</td>
+      <td style="border:1.5px solid #000;padding:1px;font-weight:bold;text-align:center;width:1%;line-height:1.2">:</td>
+      <td style="border:1.5px solid #000;padding:1px 8px;font-weight:bold;line-height:1.2">${kop.mapel||''}</td>
+      <td style="border:1.5px solid #000;text-align:center;font-weight:bold;vertical-align:middle;width:16%;font-size:${hdrSz};padding:1px;line-height:1.2">Paraf Guru</td>
+      <td style="border:1.5px solid #000;text-align:center;font-weight:bold;vertical-align:middle;width:16%;font-size:${hdrSz};padding:1px;line-height:1.2">Paraf Ortu</td>
+      <td style="border:1.5px solid #000;text-align:center;font-weight:bold;vertical-align:middle;width:10%;font-size:${hdrSz};padding:1px;line-height:1.2">Nilai</td>
+    </tr>
+    <tr>
+      <td style="border:1.5px solid #000;padding:1px 8px;font-weight:bold;white-space:nowrap;line-height:1.2">Nama / No. Absen</td>
+      <td style="border:1.5px solid #000;padding:1px;font-weight:bold;text-align:center;line-height:1.2">:</td>
+      <td style="border:1.5px solid #000;padding:1px 8px;font-weight:bold;line-height:1.2"></td>
+      <td rowspan="4" style="border:1.5px solid #000;"></td>
+      <td rowspan="4" style="border:1.5px solid #000;"></td>
+      <td rowspan="4" style="border:1.5px solid #000;"></td>
+    </tr>
+    <tr>
+      <td style="border:1.5px solid #000;padding:1px 8px;font-weight:bold;white-space:nowrap;line-height:1.2">Kelas</td>
+      <td style="border:1.5px solid #000;padding:1px;font-weight:bold;text-align:center;line-height:1.2">:</td>
+      <td style="border:1.5px solid #000;padding:1px 8px;font-weight:bold;line-height:1.2">${kop.kelas||''}</td>
+    </tr>
+    <tr>
+      <td style="border:1.5px solid #000;padding:1px 8px;font-weight:bold;white-space:nowrap;line-height:1.2">Hari, Tanggal</td>
+      <td style="border:1.5px solid #000;padding:1px;font-weight:bold;text-align:center;line-height:1.2">:</td>
+      <td style="border:1.5px solid #000;padding:1px 8px;font-weight:bold;line-height:1.2">${kop.hari||''}</td>
+    </tr>
+    <tr>
+      <td style="border:1.5px solid #000;padding:1px 8px;font-weight:bold;white-space:nowrap;line-height:1.2">Waktu</td>
+      <td style="border:1.5px solid #000;padding:1px;font-weight:bold;text-align:center;line-height:1.2">:</td>
+      <td style="border:1.5px solid #000;padding:1px 8px;font-weight:bold;line-height:1.2">${kop.waktu ? kop.waktu+' Menit' : 'Menit'}</td>
+    </tr>
+  </table>
+</div>`;
+}
+
+// Membuat format khusus KOP HTML yang kompatibel penuh dengan MS Word
+function buildKopHTMLForWord(kop) {
+  const logoHTML = kop.logoB64
+    ? `<img src="${kop.logoB64}" width="72" height="72" style="max-width:72px;max-height:72px;display:block;margin:0 auto;" />`
+    : `<div style="font-size:8pt;color:#999;text-align:center;border:1px dashed #999;padding:10px;">Logo Ujian</div>`;
+  
+  // Setiap teks di dalam sel dibungkus <p style="margin:0"> secara eksplisit.
+  // Ini WAJIB: jika teks dibiarkan polos di dalam <td>, MS Word akan
+  // membungkusnya sendiri sebagai paragraf "Normal" bawaan Word yang punya
+  // jarak spasi default (biasanya ~8-10pt), sehingga kop terlihat renggang
+  // walau padding CSS sudah dikecilkan.
+  const P = (txt, extra='') => `<p class="kop-p" style="margin:0;padding:0;line-height:1.15;mso-line-height-rule:exactly;mso-margin-top-alt:0;mso-margin-bottom-alt:0;${extra}">${txt}</p>`;
+
+  return `
+  <div class="kop-title">${kop.instansi || 'Nama Instansi'}</div>
+  <div class="kop-subtitle">${kop.penilaian || 'Jenis Penilaian'}</div>
+  <div class="kop-tahun">TAHUN PELAJARAN ${kop.tahun || '----/----'}</div>
+  <table class="kop-table">
+    <tr>
+      <td rowspan="5" style="width:75px; text-align:center; vertical-align:middle;">${logoHTML}</td>
+      <td style="font-weight:bold; width:120px;">${P('Mata Pelajaran')}</td>
+      <td style="font-weight:bold; width:10px; text-align:center;">${P(':','text-align:center;')}</td>
+      <td style="font-weight:bold;">${P(kop.mapel || '')}</td>
+      <td style="text-align:center; font-weight:bold; width:90px;">${P('Paraf Guru','text-align:center;')}</td>
+      <td style="text-align:center; font-weight:bold; width:90px;">${P('Paraf Ortu','text-align:center;')}</td>
+      <td style="text-align:center; font-weight:bold; width:70px;">${P('Nilai','text-align:center;')}</td>
+    </tr>
+    <tr>
+      <td style="font-weight:bold;">${P('Nama / No. Absen')}</td>
+      <td style="font-weight:bold; text-align:center;">${P(':','text-align:center;')}</td>
+      <td style="font-weight:bold;">${P('')}</td>
+      <td rowspan="4" style="border: 1.0pt solid #000000;"></td>
+      <td rowspan="4" style="border: 1.0pt solid #000000;"></td>
+      <td rowspan="4" style="border: 1.0pt solid #000000;"></td>
+    </tr>
+    <tr>
+      <td style="font-weight:bold;">${P('Kelas')}</td>
+      <td style="font-weight:bold; text-align:center;">${P(':','text-align:center;')}</td>
+      <td style="font-weight:bold;">${P(kop.kelas || '')}</td>
+    </tr>
+    <tr>
+      <td style="font-weight:bold;">${P('Hari, Tanggal')}</td>
+      <td style="font-weight:bold; text-align:center;">${P(':','text-align:center;')}</td>
+      <td style="font-weight:bold;">${P(kop.hari || '')}</td>
+    </tr>
+    <tr>
+      <td style="font-weight:bold;">${P('Waktu')}</td>
+      <td style="font-weight:bold; text-align:center;">${P(':','text-align:center;')}</td>
+      <td style="font-weight:bold;">${P(kop.waktu ? kop.waktu+' Menit' : 'Menit')}</td>
+    </tr>
+  </table>`;
+}
+
+let previewTheme='light';
+function setPreviewTheme(t){
+  previewTheme=t;
+  document.getElementById('pv-light').classList.toggle('on',t==='light');
+  document.getElementById('pv-dark').classList.toggle('on',t==='dark');
+  updatePreview();
+}
+function updatePreview(){
+  const kop=getKopData();
+  const inner=`<div class="kop-preview"><div class="kop-preview-inner">${buildKopHTML(kop,false)}</div></div>`;
+  const wrapMobile=document.getElementById('kop-preview-wrap-mobile');
+  const content=previewTheme==='dark'?`<div class="kop-preview-dark-wrap">${inner}</div>`:inner;
+  if(!lastGeneratedData){
+    const wrap=document.getElementById('kop-preview-wrap');
+    if(wrap) wrap.innerHTML=content;
+  }
+  if(wrapMobile) wrapMobile.innerHTML=inner;
+}
+
+// ===================== TOAST =====================
+const TICONS={success:'fa-circle-check',error:'fa-circle-xmark',warning:'fa-triangle-exclamation',info:'fa-circle-info'};
+function showToast({type='info',title,message,tip=null,duration=6000}){
+  const c=document.getElementById('tc'),id='t'+Date.now();
+  const el=document.createElement('div');
+  
+  const isBismillah = title.includes("Bismillah");
+  el.className=`toast ${isBismillah ? 'bismillah' : type}`;
+  el.id=id;
+  
+  const customIcon = isBismillah ? 'fa-mosque' : TICONS[type] || 'fa-info';
+  
+  el.innerHTML=`<div class="tiv"><i class="fa-solid ${customIcon}"></i></div>
+    <div class="tb"><div class="ttl">${title}</div><div class="tms">${message}</div>${tip?`<div class="ttip">${tip}</div>`:''}</div>
+    <button class="tcls" onclick="dsmToast('${id}')"><i class="fa-solid fa-xmark"></i></button>`;
+  c.appendChild(el);
+  if(duration>0) setTimeout(()=>dsmToast(id),duration);
+}
+function dsmToast(id){const el=document.getElementById(id);if(!el)return;el.classList.add('out');setTimeout(()=>el.remove(),280)}
+
+// ===================== ERROR HANDLING =====================
+function isQuotaError(m){
+  const l=m.toLowerCase();
+  return l.includes('quota')||l.includes('rate limit')||l.includes('resource_exhausted')||l.includes('429')||l.includes('exceeded')||l.includes('too many requests');
+}
+
+function bersihkanDanParseClientSide(text) {
+  if (!text) throw new Error("JSON Kosong.");
+  var cleanText = text.trim();
+  var startIndex = cleanText.indexOf('{');
+  var endIndex = cleanText.lastIndexOf('}');
+  if (startIndex === -1 || endIndex === -1 || endIndex < startIndex) {
+    throw new Error("JSON Tidak Valid.");
+  }
+  cleanText = cleanText.substring(startIndex, endIndex + 1);
+  cleanText = cleanText.replace(/,\s*([\]}])/g, '$1');
+  return JSON.parse(cleanText);
+}
+
+function handleError(msg){
+  const lowerMsg = (msg || '').toLowerCase();
+  
+  if (lowerMsg.includes('unexpected') || lowerMsg.includes('json') || lowerMsg.includes('position') || lowerMsg.includes('parse')) {
+    showToast({
+      type: 'warning',
+      title: '🕌 Pasti Anda Belum Membaca Bismillah! 🕌',
+      message: 'Ulangi dan Baca Bismillah terlebih dahulu agar berkah dan AI bekerja lancar ya! 😊✨',
+      tip: '💡 Hubungkan ulang API key Anda atau klik kembali tombol <strong>Generate Soal</strong> untuk mengulang proses.',
+      duration: 10000
+    });
+  } else if(isQuotaError(msg)){
+    document.getElementById('qbanner').style.display='flex';
+    showToast({type:'warning',title:'Kuota Gemini Habis / Key Bermasalah',message:'Sistem akan mencoba key berikutnya pada generate berikutnya.',
+      tip:`💡 Tambahkan lebih banyak API Key di menu <strong>Pengaturan API</strong>.`,duration:10000});
+  } else {
+    showToast({type:'error',title:'Terjadi Kesalahan',message:msg||'Gagal menghubungi server atau API.',duration:8000});
+  }
+}
+
+// ===================== LOADING =====================
+function showLoading(v){
+  document.getElementById('loading-overlay').style.display=v?'flex':'none';
+  document.getElementById('btn-generate').disabled=v;
+}
+
+// ===================== ARABIC DETECTION =====================
+function isBahasaArab(mapel){
+  const lower=(mapel||'').toLowerCase();
+  return lower.includes('arab') || lower.includes('arabic') || lower==='ba' || lower.includes('bahasa arab');
+}
+
+// ===================== HINT TIPE SOAL (kondisikan utk Bahasa Arab) =====================
+function updateTipeHint(){
+  const mapelEl=document.getElementById('mapel');
+  const isArab=isBahasaArab(mapelEl?mapelEl.value:'');
+  const r1=document.getElementById('tipe_r1').value;
+  const r2=document.getElementById('tipe_r2').value;
+  const h1=document.getElementById('hint_r1');
+  const h2=document.getElementById('hint_r2');
+
+  if(h1){
+    if(r1==='Pilihan Ganda Kompleks'){
+      h1.innerHTML = isArab
+        ? '<i class="fa-solid fa-circle-info"></i> Soal Arab: jawaban benar bisa lebih dari 1 (maks 3), opsi &amp; huruf jawaban otomatis dalam huruf Arab (أ ب ج).'
+        : '<i class="fa-solid fa-circle-info"></i> Jawaban benar boleh lebih dari 1 (maksimal 3) per soal.';
+    } else if(r1==='Campuran'){
+      h1.innerHTML = isArab
+        ? '<i class="fa-solid fa-circle-info"></i> Soal Arab: campuran Pilihan Ganda biasa &amp; Kompleks (multi-jawaban, maks 3) akan diacak otomatis.'
+        : '<i class="fa-solid fa-circle-info"></i> Sistem akan mencampur soal Pilihan Ganda biasa dan Kompleks (multi-jawaban) secara acak.';
+    } else {
+      h1.innerHTML='';
+    }
+  }
+  if(h2){
+    if(r2==='Menjodohkan'){
+      h2.innerHTML = isArab
+        ? '<i class="fa-solid fa-circle-info"></i> Soal Arab: kolom jawaban Menjodohkan otomatis diacak &amp; diberi huruf Arab (أ ب ج), tampil RTL.'
+        : '<i class="fa-solid fa-circle-info"></i> Kolom jawaban akan diacak &amp; diberi huruf otomatis oleh sistem (A, B, C, ...).';
+    } else if(r2==='Campuran'){
+      h2.innerHTML = isArab
+        ? '<i class="fa-solid fa-circle-info"></i> Soal Arab: campuran Isian Singkat &amp; Menjodohkan (huruf Arab, RTL) akan diacak otomatis.'
+        : '<i class="fa-solid fa-circle-info"></i> Sistem akan mencampur soal Isian Singkat dan Menjodohkan secara acak dalam satu bagian.';
+    } else {
+      h2.innerHTML='';
+    }
+  }
+}
+
+// ===================== HELPER TIPE SOAL: PGK / MENJODOHKAN / CAMPURAN =====================
+const LATIN_LETTERS=['A','B','C','D','E','F','G','H','I','J','K','L','M','N','O','P','Q','R','S','T'];
+const ARABIC_LETTERS=['أ','ب','ج','د','ه','و','ز','ح','ط','ي','ك','ل','م','ن','س','ع','ف','ص','ق','ر'];
+function letterFor(idx,isArab){ const arr=isArab?ARABIC_LETTERS:LATIN_LETTERS; return arr[idx]||String(idx+1); }
+function joinJawabanArr(arr,isArab){ if(!Array.isArray(arr)) return arr||'-'; return arr.join(isArab?'، ':', '); }
+function numLabel(no,isArab){ return isArab ? (arabNums[(no||1)-1]||no) : (no||''); }
+
+// Memastikan setiap item r1/r2 punya field "tipe" yang konsisten dengan pilihan form,
+// walau AI kadang lupa menyertakannya (safety-net, tidak mengubah skenario generate).
+function normalizeSoalTipe(data,jsonSoal){
+  if(jsonSoal.r1){
+    jsonSoal.r1.forEach(it=>{
+      if(data.r1_tipe==='Campuran'){ it.tipe=(it.tipe==='pgk')?'pgk':'pg'; }
+      else { it.tipe=(data.r1_tipe==='Pilihan Ganda Kompleks')?'pgk':'pg'; }
+      if(it.tipe==='pgk'&&it.jawaban&&!Array.isArray(it.jawaban)) it.jawaban=[it.jawaban];
+      if(it.tipe==='pg'&&Array.isArray(it.jawaban)) it.jawaban=it.jawaban[0]||'';
+    });
+  }
+  if(jsonSoal.r2){
+    jsonSoal.r2.forEach(it=>{
+      if(data.r2_tipe==='Campuran'){ it.tipe=(it.tipe==='menjodohkan')?'menjodohkan':'isian'; }
+      else { it.tipe=(data.r2_tipe==='Menjodohkan')?'menjodohkan':'isian'; }
+    });
+  }
+  return jsonSoal;
+}
+
+// Mengacak kolom jawaban Menjodohkan sekali saja per hasil generate,
+// supaya cetak/preview/word export konsisten memakai urutan huruf yang sama.
+function prepareMenjodohkan(jsonSoal,isArab){
+  if(!jsonSoal.r2||jsonSoal.r2.length===0) return;
+  const items=jsonSoal.r2.filter(it=>it.tipe==='menjodohkan');
+  if(items.length===0) return;
+  const pool=items.map((it,i)=>({idx:i,text:it.jawaban}));
+  for(let i=pool.length-1;i>0;i--){const j=Math.floor(Math.random()*(i+1));[pool[i],pool[j]]=[pool[j],pool[i]];}
+  pool.forEach((p,pos)=>{ p.letter=letterFor(pos,isArab); });
+  items.forEach((it,i)=>{ const found=pool.find(p=>p.idx===i); it._correctLetter=found?found.letter:'-'; });
+  jsonSoal._menjodohkanOptions=pool.map(p=>({letter:p.letter,text:p.text}));
+}
+
+// Label instruksi Romawi I/II yang menyesuaikan tipe (PG/Kompleks/Campuran, Isian/Menjodohkan/Campuran)
+// dan bahasa (Indonesia/Arab) -- inilah pengkondisian Bahasa Arab untuk Kompleks & Menjodohkan.
+function getSecLabels(data,isArab){
+  const sec1label = isArab
+    ? (data.r1_tipe==='Pilihan Ganda Kompleks' ? 'أولاً: اختر جميع الإجابات الصحيحة! (قد تكون أكثر من إجابة، حتى ٣)'
+      : data.r1_tipe==='Campuran' ? 'أولاً: اختر الإجابة الصحيحة! (بعض الأسئلة قد تحتوي أكثر من إجابة صحيحة، حتى ٣)'
+      : 'أولاً: اختر الإجابة الصحيحة!')
+    : (data.r1_tipe==='Pilihan Ganda Kompleks' ? 'I. Berilah tanda silang (x) pada SEMUA jawaban yang benar! (Bisa lebih dari 1, maksimal 3)'
+      : data.r1_tipe==='Campuran' ? 'I. Berilah tanda silang (x) pada jawaban yang benar! (Sebagian soal jawabannya bisa lebih dari 1, maksimal 3)'
+      : 'I. Berilah tanda silang (x) pada huruf yang tepat!');
+
+  const sec2label = isArab
+    ? (data.r2_tipe==='Menjodohkan' ? 'ثانياً: صل بين العبارات في العمود الأول والإجابة الصحيحة في العمود الثاني!'
+      : data.r2_tipe==='Campuran' ? 'ثانياً: أجب حسب التعليمات في كل سؤال!'
+      : 'ثانياً: أجب على الأسئلة التالية إجابة قصيرة!')
+    : (data.r2_tipe==='Menjodohkan' ? 'II. Jodohkan pernyataan di kolom kiri dengan jawaban yang tepat di kolom kanan!'
+      : data.r2_tipe==='Campuran' ? 'II. Kerjakan soal berikut sesuai petunjuk pada masing-masing soal!'
+      : 'II. Jawablah pertanyaan berikut dengan singkat dan tepat!');
+
+  const sec3label = isArab ? 'ثالثاً: أجب على الأسئلة التالية بشكل مفصل!' : 'III. Jawablah pertanyaan berikut dengan uraian yang jelas!';
+  return {sec1label,sec2label,sec3label};
+}
+
+function instruksiPG_ID(){ return "- Untuk soal tipe 'Pilihan Ganda' biasa: sediakan 4-5 opsi, HANYA SATU jawaban benar. Field \"jawaban\" berupa string 1 huruf, contoh \"A\". Field \"tipe\" isi \"pg\".\n"; }
+function instruksiPGK_ID(){ return "- Untuk soal tipe 'Pilihan Ganda Kompleks': sediakan 5-6 opsi, dan jawaban BENAR boleh LEBIH DARI SATU (minimal 2, maksimal 3 jawaban benar). Field \"jawaban\" WAJIB berupa array huruf, contoh [\"A\",\"C\"]. Field \"tipe\" isi \"pgk\".\n"; }
+function instruksiR1_ID(tipe){
+  if(tipe==='Pilihan Ganda Kompleks') return instruksiPGK_ID();
+  if(tipe==='Campuran') return instruksiPG_ID()+instruksiPGK_ID()+"- Campur kedua tipe di atas secara acak dan seimbang, isi field \"tipe\" tiap soal.\n";
+  return instruksiPG_ID();
+}
+function instruksiIsian_ID(){ return "- Untuk soal tipe 'Isian Singkat': field \"soal\" berisi pertanyaan, field \"jawaban\" berisi jawaban singkat. Field \"tipe\" isi \"isian\".\n"; }
+function instruksiMenjodohkan_ID(){ return "- Untuk soal tipe 'Menjodohkan': field \"soal\" berisi pernyataan, field \"jawaban\" berisi kata/frasa PASANGAN yang benar (singkat, unik, tidak mirip antar soal). Field \"tipe\" isi \"menjodohkan\". Jangan sertakan huruf pilihan pada \"jawaban\".\n"; }
+function instruksiR2_ID(tipe){
+  if(tipe==='Menjodohkan') return instruksiMenjodohkan_ID();
+  if(tipe==='Campuran') return instruksiIsian_ID()+instruksiMenjodohkan_ID()+"- Campur kedua tipe di atas secara acak dan seimbang, isi field \"tipe\" tiap soal.\n";
+  return instruksiIsian_ID();
+}
+function instruksiPG_AR(){ return "- للأسئلة العادية: 4-5 اختيارات، إجابة صحيحة واحدة. حقل \"jawaban\" حرف واحد مثل \"أ\". حقل \"tipe\": \"pg\".\n"; }
+function instruksiPGK_AR(){ return "- للأسئلة المعقدة (Kompleks): 5-6 اختيارات، إجابات صحيحة قد تكون أكثر من واحدة (2-3). حقل \"jawaban\" مصفوفة حروف مثل [\"أ\",\"ج\"]. حقل \"tipe\": \"pgk\".\n"; }
+function instruksiR1_AR(tipe){
+  if(tipe==='Pilihan Ganda Kompleks') return instruksiPGK_AR();
+  if(tipe==='Campuran') return instruksiPG_AR()+instruksiPGK_AR()+"- اخلط بين النوعين بشكل عشوائي ومتوازن، وحدد \"tipe\" لكل سؤال.\n";
+  return instruksiPG_AR();
+}
+function instruksiIsian_AR(){ return "- للأسئلة القصيرة: حقل \"soal\" للسؤال، \"jawaban\" لإجابة قصيرة. حقل \"tipe\": \"isian\".\n"; }
+function instruksiMenjodohkan_AR(){ return "- لأسئلة التوصيل (Menjodohkan): \"soal\" للعبارة، \"jawaban\" للكلمة المطابقة القصيرة الفريدة. حقل \"tipe\": \"menjodohkan\". لا تُدرج حرف الاختيار داخل \"jawaban\".\n"; }
+function instruksiR2_AR(tipe){
+  if(tipe==='Menjodohkan') return instruksiMenjodohkan_AR();
+  if(tipe==='Campuran') return instruksiIsian_AR()+instruksiMenjodohkan_AR()+"- اخلط بين النوعين بشكل عشوائي ومتوازن، وحدد \"tipe\" لكل سؤال.\n";
+  return instruksiIsian_AR();
+}
+
+function buildPromptArab(data){
+  return `أنت معلم خبير متخصص في إعداد أسئلة الاختبارات لمادة اللغة العربية في إندونيسيا.
+اصنع أسئلة للمرحلة ${data.jenjang} الصف ${data.kelas} الفصل ${data.semester} وفق منهج ${data.kurikulum}.
+الموضوع: ${data.materi}.
+
+متطلبات هامة جداً:
+- اكتب جميع الأسئلة والخيارات والإجابات باللغة العربية الفصحى مع الشكل الكامل (الحركات).
+- اكتب النص من اليمين إلى اليسار.
+- كن متخصصاً محترفاً في اللغة العربية.
+- الهيكل المطلوب: الجزء الأول (${data.r1_tipe}): ${data.r1_jml} سؤالاً.${data.r2_jml>0?` الجزء الثاني (${data.r2_tipe}): ${data.r2_jml} سؤالاً.`:''}${data.r3_jml>0?` الجزء الثالث (${data.r3_tipe}): ${data.r3_jml} سؤالاً.`:''}
+
+تعليمات تفصيلية لكل نوع من الأسئلة:
+${instruksiR1_AR(data.r1_tipe)}${data.r2_jml>0?instruksiR2_AR(data.r2_tipe):''}
+أرجع المخرجات بتنسيق JSON نكي فقط وبدون تنسيق Markdown، مع حقل "tipe" في كل سؤال:
+{"r1":[{"no":1,"tipe":"pg","soal":"...","opsi":["أ. ...","ب. ...","ج. ...","د. ..."],"jawaban":"أ"}],"r2":[{"no":1,"tipe":"isian","soal":"...","jawaban":"..."}],"r3":[{"no":1,"soal":"...","jawaban":"..."}]}
+إذا كان عدد الجزء 2 أو 3 = 0، أعط مصفوفة فارغة [].`;
+}
+
+// ===================== GENERATE =====================
+async function generateAI(){
+  const mapel=document.getElementById('mapel').value.trim();
+  const materi=document.getElementById('materi').value.trim();
+  if(!mapel||!materi){showToast({type:'error',title:'Form Belum Lengkap',message:'Mata Pelajaran dan Bab Materi wajib diisi.'});return;}
+
+  const apiKey=getActiveApiKey();
+  if(!apiKey){
+    showToast({type:'error',title:'API Key Belum Ada',message:'Silakan tambahkan API Key di menu Pengaturan API terlebih dahulu.',duration:6000});
+    switchTab('api-settings');
+    return;
+  }
+
+  document.getElementById('qbanner').style.display='none';
+  const kop=getKopData();
+  const isArab=isBahasaArab(mapel);
+
+  const data={
+    model:'gemini-3.1-flash-lite',
+    kurikulum:document.getElementById('kurikulum').value,
+    karakteristik:document.getElementById('karakteristik').value,
+    jenjang:document.getElementById('jenjang').value,
+    kelas:document.getElementById('kelas').value,
+    semester:document.getElementById('semester').value,
+    mapel,materi,
+    r1_tipe:document.getElementById('tipe_r1').value,
+    r1_jml:parseInt(document.getElementById('jumlah_r1').value)||0,
+    r2_tipe:document.getElementById('tipe_r2').value,
+    r2_jml:parseInt(document.getElementById('jumlah_r2').value)||0,
+    r3_tipe:document.getElementById('tipe_r3').value,
+    r3_jml:parseInt(document.getElementById('jumlah_r3').value)||0,
+    kop:{logoB64:kop.logoB64,instansi:kop.instansi,penilaian:kop.penilaian,tahun:kop.tahun,waktu:kop.waktu,hari:kop.hari},
+    isArab,
+    akun:currentAccount,
+    gambarMode:document.getElementById('gambar_mode')?.value||'tidak_ada',
+    jenisGambar:document.getElementById('jenis_gambar')?.value||'otomatis'
+  };
+
+  showLoading(true);
+  try{
+    let resp;
+    if(isGasConfigured()){
+      resp=await callGAS('generateSoal',{data:data,apiKey:apiKey},'POST');
+    } else {
+      resp=await generateSoalClientSide(data,apiKey,isArab);
+    }
+    afterKeyUsed();
+
+    normalizeSoalTipe(data,resp);
+    prepareMenjodohkan(resp,isArab);
+
+    lastGeneratedData=data;
+    lastGeneratedJson=resp;
+    lastKop=kop;
+    renderPrintArea(data,resp,kop,isArab);
+    updatePreviewWithSoal(data,resp,kop,isArab);
+    showLoading(false);
+    showToast({type:'success',title:'Soal Berhasil Dibuat!',message:'Klik "Cetak / Export" di menu samping untuk mencetak.',duration:5000});
+    setTimeout(()=>openPreviewSoalModal(),400);
+  }catch(err){
+    showLoading(false);
+    handleError(err.message||'Gagal menghubungi server atau API.');
+  }
+}
+
+// ===================== CLIENT SIDE FALLBACK =====================
+// Catatan: fitur pencarian gambar otomatis (Pixabay/Wikimedia) hanya aktif saat
+// aplikasi berjalan sebagai Web App Apps Script (lewat generateSoalGAS di Code.gs),
+// karena butuh UrlFetchApp di server. Mode fallback ini (dipakai kalau file dibuka
+// di luar Apps Script) tetap generate soal seperti biasa, hanya tanpa gambar.
+async function generateSoalClientSide(data,apiKey,isArab){
+  let prompt;
+  if(isArab){
+    prompt=buildPromptArab(data);
+  } else {
+    prompt=`Anda adalah guru ahli pembuat soal ujian berdasarkan standar ${data.kurikulum} Indonesia.
+Buat soal untuk jenjang ${data.jenjang} Kelas ${data.kelas} Semester ${data.semester}.
+Mata Pelajaran: ${data.mapel}. Materi/Bab: ${data.materi}. Karakteristik Soal: ${data.karakteristik}.
+Struktur: Romawi I (${data.r1_tipe}): ${data.r1_jml} soal.${data.r2_jml>0?` Romawi II (${data.r2_tipe}): ${data.r2_jml} soal.`:''}${data.r3_jml>0?` Romawi III (${data.r3_tipe}): ${data.r3_jml} soal.`:''}
+Instruksi detail per tipe soal:
+${instruksiR1_ID(data.r1_tipe)}${data.r2_jml>0?instruksiR2_ID(data.r2_tipe):''}
+KEMBALIKAN OUTPUT HANYA DALAM FORMAT JSON MURNI TANPA MARKDOWN. Setiap soal WAJIB punya field "tipe".
+{"r1":[{"no":1,"tipe":"pg","soal":"...","opsi":["A. ...","B. ...","C. ...","D. ..."],"jawaban":"A"}],"r2":[{"no":1,"tipe":"isian","soal":"...","jawaban":"..."}],"r3":[{"no":1,"soal":"...","jawaban":"..."}]}
+Jika jumlah Romawi 2 atau 3 = 0, berikan array kosong []. Sesuaikan jumlah opsi dengan jenjang.`;
+  }
+  const url=`https://generativelanguage.googleapis.com/v1beta/models/${data.model}:generateContent?key=${apiKey}`;
+  const res=await fetch(url,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({contents:[{parts:[{text:prompt}]}],generationConfig:{responseMimeType:"application/json"}})});
+  if(!res.ok){const e=await res.json();throw new Error(`${res.status}: ${e.error?.message||'Error dari Gemini API'}`)}
+  const r=await res.json();
+  
+  let generatedText = r.candidates[0].content.parts[0].text;
+  return bersihkanDanParseClientSide(generatedText);
+}
+
+// ===================== RENDER PRINT =====================
+function renderPrintArea(data,jsonSoal,kop,isArab){
+  const pa=document.getElementById('print-area');
+  pa.style.display='none'; 
+
+  const arabDir = isArab ? 'direction:rtl;text-align:right;font-family:"Traditional Arabic","Scheherazade New",serif;' : '';
+  const arabCellDir = isArab ? 'direction:rtl;text-align:right;' : '';
+
+  let html=buildKopHTML(kop,true);
+
+  const {sec1label,sec2label,sec3label}=getSecLabels(data,isArab);
+
+  if(jsonSoal.r1&&jsonSoal.r1.length>0){
+    html+=`<div style="margin-top:14px;margin-bottom:14px;${arabDir}"><div style="margin-bottom:6px;${arabDir}"><b>${sec1label}</b></div><table style="width:100%;font-size:11pt;border-collapse:collapse;${arabDir}">`;
+    jsonSoal.r1.forEach((item,i)=>{
+      const pgRowStyle = isArab ? 'line-height:1;' : '';
+      const isPgk = item.tipe==='pgk';
+      const pgkNote = (isPgk && data.r1_tipe==='Campuran') ? ` <i style="font-size:9pt;color:#555">${pgkHintText(isArab)}</i>` : '';
+      html+=`<tr><td style="vertical-align:top;width:28px;${arabCellDir}${pgRowStyle}">${isArab?arabNums[i]||i+1:i+1}.</td><td style="vertical-align:top;padding-bottom:2px;${arabCellDir}${pgRowStyle}">${imageBlockHtml(item,260)}${item.soal}${pgkNote}</td></tr>`;
+      if(item.opsi){
+        const opsiStyle = 'line-height:1;margin:0;padding:0;';
+        html+=`<tr><td></td><td style="padding-bottom:${isArab?'4':'4'}px;${arabCellDir}">${item.opsi.map(o=>`<div style="${opsiStyle}">${o}</div>`).join('')}</td></tr>`;
+      }
+    });
+    html+=`</table></div>`;
+  }
+  if(jsonSoal.r2&&jsonSoal.r2.length>0){
+    const isianItems=jsonSoal.r2.filter(it=>it.tipe!=='menjodohkan');
+    const menjItems=jsonSoal.r2.filter(it=>it.tipe==='menjodohkan');
+    html+=`<div style="margin-top:14px;margin-bottom:14px;${arabDir}"><div style="margin-bottom:6px;${arabDir}"><b>${sec2label}</b></div>`;
+    if(isianItems.length>0){
+      html+=`<table style="width:100%;font-size:11pt;border-collapse:collapse;${arabDir}">`;
+      isianItems.forEach(item=>{
+        html+=`<tr><td style="vertical-align:top;width:28px;${arabCellDir}">${numLabel(item.no,isArab)}.</td><td style="vertical-align:top;${arabCellDir}">${imageBlockHtml(item,260)}${item.soal}</td></tr>`;
+        if(isArab){
+          html+=`<tr><td></td><td style="padding-bottom:0">
+            <div style="border-bottom:1px solid #000;height:10mm;margin-bottom:4px"></div>
+            <div style="border-bottom:1px solid #000;height:10mm;margin-bottom:8px"></div>
+          </td></tr>`;
+        } else {
+          html+=`<tr><td></td><td style="padding-bottom:0"><div style="border-bottom:1px solid #000;height:10mm;margin-bottom:8px"></div></td></tr>`;
+        }
+      });
+      html+=`</table>`;
+    }
+    if(menjItems.length>0){
+      if(data.r2_tipe==='Campuran'){
+        const menjSub = isArab ? 'صل بين العبارات التالية بالإجابة الصحيحة:' : 'Jodohkan pernyataan berikut dengan jawaban yang tepat!';
+        html+=`<div style="margin:${isianItems.length>0?'10px 0 6px':'0 0 6px'};${arabDir}"><i>${menjSub}</i></div>`;
+      }
+      html+=`<table style="width:100%;font-size:11pt;border-collapse:collapse;${arabDir}"><tr>
+        <td style="width:58%;vertical-align:top;${arabCellDir}">${menjItems.map(it=>`<div style="margin-bottom:8px;">${numLabel(it.no,isArab)}. ${it.soal}</div>`).join('')}</td>
+        <td style="width:42%;vertical-align:top;${arabCellDir}">${(jsonSoal._menjodohkanOptions||[]).map(o=>`<div style="margin-bottom:8px;">${o.letter}. ${o.text}</div>`).join('')}</td>
+      </tr></table>`;
+    }
+    html+=`</div>`;
+  }
+  if(jsonSoal.r3&&jsonSoal.r3.length>0){
+    html+=`<div style="margin-top:14px;margin-bottom:14px;${arabDir}"><div style="margin-bottom:6px;${arabDir}"><b>${sec3label}</b></div><table style="width:100%;font-size:11pt;border-collapse:collapse;${arabDir}">`;
+    jsonSoal.r3.forEach((item,i)=>{
+      html+=`<tr><td style="vertical-align:top;width:28px;${arabCellDir}">${isArab?arabNums[i]||i+1:i+1}.</td><td style="vertical-align:top;${arabCellDir}">${imageBlockHtml(item,260)}${item.soal}</td></tr>`;
+      if(isArab){
+        html+=`<tr><td></td><td style="padding-bottom:0">
+          <div style="border-bottom:1px solid #000;height:12mm;margin-bottom:4px"></div>
+          <div style="border-bottom:1px solid #000;height:12mm;margin-bottom:4px"></div>
+          <div style="border-bottom:1px solid #000;height:12mm;margin-bottom:12px"></div>
+        </td></tr>`;
+      } else {
+        html+=`<tr><td></td><td style="padding-bottom:0">
+          <div style="border-bottom:1px solid #000;height:8mm;margin-bottom:0"></div>
+          <div style="border-bottom:1px solid #000;height:8mm;margin-bottom:0"></div>
+          <div style="border-bottom:1px solid #000;height:8mm;margin-bottom:12px"></div>
+        </td></tr>`;
+      }
+    });
+    html+=`</table></div>`;
+  }
+  
+  const kunciTitle = isArab ? 'مفتاح الإجابات' : 'KUNCI JAWABAN';
+  const r1Title = isArab ? 'الجزء الأول' : 'Romawi I';
+  const r2Title = isArab ? 'الجزء الثاني' : 'Romawi II';
+  const r3Title = isArab ? 'الجزء الثالث' : 'Romawi III';
+  html+=`<div style="page-break-before:always;font-family:sans-serif;${arabDir}"><h3 style="text-align:center">${kunciTitle}</h3><hr><br>`;
+  if(jsonSoal.r1&&jsonSoal.r1.length>0){html+=`<b>${r1Title}</b><ol style="${arabDir}">`;jsonSoal.r1.forEach(it=>html+=`<li style="${arabDir}">${it.tipe==='pgk'?joinJawabanArr(it.jawaban,isArab):(it.jawaban||'-')}</li>`);html+=`</ol><br>`}
+  if(jsonSoal.r2&&jsonSoal.r2.length>0){html+=`<b>${r2Title}</b><ol style="${arabDir}">`;jsonSoal.r2.slice().sort((a,b)=>(a.no||0)-(b.no||0)).forEach(it=>html+=`<li style="${arabDir}">${it.tipe==='menjodohkan'?(it._correctLetter||'-'):(it.jawaban||'-')}</li>`);html+=`</ol><br>`}
+  if(jsonSoal.r3&&jsonSoal.r3.length>0){html+=`<b>${r3Title}</b><ol style="${arabDir}">`;jsonSoal.r3.forEach(it=>html+=`<li style="${arabDir}">${it.jawaban||'-'}</li>`);html+=`</ol><br>`}
+  html+=`</div>`;
+  pa.innerHTML=html;
+}
+
+// Hint kecil di dekat soal PGK saat mode Campuran
+function pgkHintText(isArab){ return isArab ? '(قد تكون الإجابة أكثر من واحدة)' : '(Jawaban bisa lebih dari 1)'; }
+
+// ===================== UPDATE RIGHT PANEL WITH SOAL =====================
+function updatePreviewWithSoal(data,jsonSoal,kop,isArab){
+  const wrap=document.getElementById('kop-preview-wrap');
+  if(!wrap) return;
+  const arabDir = isArab ? 'direction:rtl;text-align:right;font-family:"Traditional Arabic","Scheherazade New",serif;' : '';
+  const arabCellDir = isArab ? 'direction:rtl;text-align:right;' : '';
+
+  const {sec1label,sec2label,sec3label}=getSecLabels(data,isArab);
+
+  let html=`<div style="font-size:8.5pt;font-family:'Times New Roman',Times,serif;color:#000;line-height:1.4">`;
+  html+=buildKopHTML(kop,false);
+
+  if(jsonSoal.r1&&jsonSoal.r1.length>0){
+    html+=`<div style="margin-top:10px;${arabDir}"><b style="font-size:8pt">${sec1label}</b><br>`;
+    jsonSoal.r1.slice(0,3).forEach((item,i)=>{
+      const tag = item.tipe==='pgk' ? ` <span style="color:#4F46E5;font-size:7.5pt">[Kompleks]</span>` : '';
+      html+=`<p style="margin:4px 0 2px;${arabDir}"><b>${isArab?arabNums[i]||i+1:i+1}.</b> ${item.soal}${tag}</p>${imageBlockHtml(item,120)}`;
+      if(item.opsi){item.opsi.slice(0,4).forEach(o=>{html+=`<span style="margin-left:${isArab?0:12}px;display:block;${arabCellDir}">${o}</span>`})}
+    });
+    if(jsonSoal.r1.length>3) html+=`<p style="color:#888;font-size:8pt;${arabDir}">... dan ${jsonSoal.r1.length-3} soal lainnya</p>`;
+    html+=`</div>`;
+  }
+  if(jsonSoal.r2&&jsonSoal.r2.length>0){
+    html+=`<div style="margin-top:8px;${arabDir}"><b style="font-size:8pt">${sec2label}</b><br>`;
+    jsonSoal.r2.slice(0,2).forEach((item,i)=>{
+      if(item.tipe==='menjodohkan'){
+        html+=`<p style="margin:4px 0 2px;${arabDir}"><b>${isArab?arabNums[i]||i+1:i+1}.</b> ${item.soal} <span style="color:#0EA5E9;font-size:7.5pt">[Menjodohkan]</span></p>`;
+      } else {
+        html+=`<p style="margin:4px 0 2px;${arabDir}"><b>${isArab?arabNums[i]||i+1:i+1}.</b> ${item.soal}</p><div style="border-bottom:1px solid #aaa;height:5mm;margin-bottom:3px"></div>`;
+      }
+    });
+    if(jsonSoal.r2.length>2) html+=`<p style="color:#888;font-size:8pt;${arabDir}">... dan ${jsonSoal.r2.length-2} soal lainnya</p>`;
+    html+=`</div>`;
+  }
+  if(jsonSoal.r3&&jsonSoal.r3.length>0){
+    html+=`<div style="margin-top:8px;${arabDir}"><b style="font-size:8pt">${sec3label}</b><br>`;
+    jsonSoal.r3.slice(0,2).forEach((item,i)=>{
+      html+=`<p style="margin:4px 0 2px;${arabDir}"><b>${isArab?arabNums[i]||i+1:i+1}.</b> ${item.soal}</p><div style="border-bottom:1px solid #aaa;height:5mm;margin-bottom:3px"></div>`;
+    });
+    if(jsonSoal.r3.length>2) html+=`<p style="color:#888;font-size:8pt;${arabDir}">... dan ${jsonSoal.r3.length-2} soal lainnya</p>`;
+    html+=`</div>`;
+  }
+
+  html+=`<div style="margin-top:10px;padding:8px;background:rgba(79,70,229,.06);border:1px solid rgba(79,70,229,.15);border-radius:6px;text-align:center">
+    <button onclick="openPreviewSoalModal()" style="background:var(--accent-1);color:#fff;border:none;padding:6px 14px;border-radius:6px;font-size:11px;cursor:pointer;font-weight:600">
+      <i class="fa-solid fa-expand"></i> Lihat Preview Penuh & Cetak
+    </button>
+  </div>`;
+  html+=`</div>`;
+
+  const darkWrap=previewTheme==='dark';
+  wrap.innerHTML = darkWrap
+    ? `<div class="kop-preview-dark-wrap"><div class="kop-preview"><div class="kop-preview-inner" style="padding:10px">${html}</div></div></div>`
+    : `<div class="kop-preview"><div class="kop-preview-inner" style="padding:10px">${html}</div></div>`;
+}
+
+const arabNums=['١','٢','٣','٤','٥','٦','٧','٨','٩','١٠','١١','١٢','١٣','١٤','١٥','١٦','١٧','١٨','١٩','٢٠','٢١','٢٢','٢٣','٢٤','٢٥','٢٦','٢٧','٢٨','٢٩','٣٠','٣١','٣٢','٣٣','٣٤','٣٥','٣٦','٣٧','٣٨','٣٩','٤٠','٤١','٤٢','٤٣','٤٤','٤٥','٤٦','٤٧','٤٨','٤٩','٥٠'];
+
+// ===================== EXPORT MICROSOFT WORD (.DOC) =====================
+async function downloadWord(){
+  if(!lastGeneratedData||!lastGeneratedJson){
+    showToast({type:'warning',title:'Belum Ada Soal',message:'Generate soal terlebih dahulu.',duration:3000});
+    return;
+  }
+  const kop=lastKop||getKopData();
+  const data=lastGeneratedData;
+  const jsonSoal=lastGeneratedJson;
+  const isArab=data.isArab;
+  const arabDir=isArab?'direction:rtl;text-align:right;':'';
+  const arabClass=isArab?'rtl':'ltr';
+
+  showToast({type:'info',title:'Menyiapkan File Word...',message:'Berkas sedang disusun dalam layout halaman F4.',duration:4000});
+
+  // Penyusunan struktur dokumen dengan layout murni HTML ramah Word (Editable Kop & Soal)
+  let body = `<div class="${arabClass}">`;
+  body += buildKopHTMLForWord(kop);
+
+  const {sec1label,sec2label,sec3label}=getSecLabels(data,isArab);
+
+  // Bagian I: PG / Pilihan Ganda / Pilihan Ganda Kompleks
+  if(jsonSoal.r1&&jsonSoal.r1.length>0){
+    body+=`<div class="section-title"><b>${sec1label}</b></div>`;
+    body+=`<table class="soal-table">`;
+    jsonSoal.r1.forEach((item,i)=>{
+      const num=isArab?arabNums[i]||i+1:i+1;
+      const isPgk=item.tipe==='pgk';
+      const pgkNote=(isPgk&&data.r1_tipe==='Campuran')?` <i style="font-size:9pt;color:#555">${pgkHintText(isArab)}</i>`:'';
+      body+=`
+        <tr>
+          <td style="width:25px; text-align:${isArab?'right':'left'};">${num}.</td>
+          <td>
+            ${imageBlockHtml(item,320)}
+            <div style="margin-bottom:4px;">${item.soal}${pgkNote}</div>
+            <div class="opsi-list">`;
+      if(item.opsi){
+        item.opsi.forEach(o=>{
+          body+=`<div class="opsi-item" style="margin:0; padding:0; line-height:1; mso-line-height-rule:exactly; margin-left:${isArab?'0':'15px'}; margin-right:${isArab?'15px':'0'};">${o}</div>`;
+        });
+      }
+      body+=`
+            </div>
+          </td>
+        </tr>`;
+    });
+    body+=`</table>`;
+  }
+
+  // Bagian II: Isian Singkat / Menjodohkan / Campuran
+  if(jsonSoal.r2&&jsonSoal.r2.length>0){
+    const isianItems=jsonSoal.r2.filter(it=>it.tipe!=='menjodohkan');
+    const menjItems=jsonSoal.r2.filter(it=>it.tipe==='menjodohkan');
+    body+=`<div class="section-title"><b>${sec2label}</b></div>`;
+    if(isianItems.length>0){
+      body+=`<table class="soal-table">`;
+      isianItems.forEach(item=>{
+        const num=numLabel(item.no,isArab);
+        body+=`
+          <tr>
+            <td style="width:25px; text-align:${isArab?'right':'left'};">${num}.</td>
+            <td>
+              ${imageBlockHtml(item,320)}
+              <div style="margin-bottom:4px;">${item.soal}</div>`;
+        if(isArab){
+          body+=`<div class="line-answer"></div><div class="line-answer"></div>`;
+        } else {
+          body+=`<div class="line-answer"></div>`;
+        }
+        body+=`
+            </td>
+          </tr>`;
+      });
+      body+=`</table>`;
+    }
+    if(menjItems.length>0){
+      if(data.r2_tipe==='Campuran'){
+        const menjSub=isArab?'صل بين العبارات التالية بالإجابة الصحيحة:':'Jodohkan pernyataan berikut dengan jawaban yang tepat!';
+        body+=`<p style="margin:8pt 0 4pt 0;"><i>${menjSub}</i></p>`;
+      }
+      body+=`<table class="soal-table"><tr>
+        <td style="width:58%; vertical-align:top;">${menjItems.map(it=>`<div style="margin-bottom:8pt;">${numLabel(it.no,isArab)}. ${it.soal}</div>`).join('')}</td>
+        <td style="width:42%; vertical-align:top;">${(jsonSoal._menjodohkanOptions||[]).map(o=>`<div style="margin-bottom:8pt;">${o.letter}. ${o.text}</div>`).join('')}</td>
+      </tr></table>`;
+    }
+  }
+
+  // Bagian III: Uraian / Essay
+  if(jsonSoal.r3&&jsonSoal.r3.length>0){
+    body+=`<div class="section-title"><b>${sec3label}</b></div>`;
+    body+=`<table class="soal-table">`;
+    jsonSoal.r3.forEach((item,i)=>{
+      const num=isArab?arabNums[i]||i+1:i+1;
+      body+=`
+        <tr>
+          <td style="width:25px; text-align:${isArab?'right':'left'};">${num}.</td>
+          <td>
+            ${imageBlockHtml(item,320)}
+            <div style="margin-bottom:4px;">${item.soal}</div>`;
+      body+=`<div class="line-answer"></div><div class="line-answer"></div><div class="line-answer"></div>`;
+      body+=`
+          </td>
+        </tr>`;
+    });
+    body+=`</table>`;
+  }
+
+  // Kunci Jawaban dengan Halaman Baru (Page Break)
+  const kunciTitle=isArab?'مفتاح الإجابات':'KUNCI JAWABAN';
+  const r1Title=isArab?'الجزء الأول':'Romawi I';
+  const r2Title=isArab?'الجزء الثاني':'Romawi II';
+  const r3Title=isArab?'الجزء الثالث':'Romawi III';
+
+  body+=`
+    <div class="${arabClass}">
+      <h3 class="page-break" style="text-align:center; margin-top:20pt; font-size:14pt;">${kunciTitle}</h3>
+      <hr style="border:0; border-top:1px solid #000; margin-bottom:15pt;" />`;
+
+  const kunciLiStyle='margin:0 0 3pt 0; line-height:100%;';
+  const kunciOlStyle='margin-top:2pt; margin-bottom:10pt; line-height:100%;';
+  if(jsonSoal.r1&&jsonSoal.r1.length>0){
+    body+=`<p style="line-height:100%;margin:0;"><b>${r1Title}</b></p><ol style="${kunciOlStyle}">`;
+    jsonSoal.r1.forEach(it=>{
+      body+=`<li style="${kunciLiStyle}">${it.tipe==='pgk'?joinJawabanArr(it.jawaban,isArab):(it.jawaban||'-')}</li>`;
+    });
+    body+=`</ol>`;
+  }
+  if(jsonSoal.r2&&jsonSoal.r2.length>0){
+    body+=`<p style="line-height:100%;margin:0;"><b>${r2Title}</b></p><ol style="${kunciOlStyle}">`;
+    jsonSoal.r2.slice().sort((a,b)=>(a.no||0)-(b.no||0)).forEach(it=>{
+      body+=`<li style="${kunciLiStyle}">${it.tipe==='menjodohkan'?(it._correctLetter||'-'):(it.jawaban||'-')}</li>`;
+    });
+    body+=`</ol>`;
+  }
+  if(jsonSoal.r3&&jsonSoal.r3.length>0){
+    body+=`<p style="line-height:100%;margin:0;"><b>${r3Title}</b></p><ol style="${kunciOlStyle}">`;
+    jsonSoal.r3.forEach(it=>{
+      body+=`<li style="${kunciLiStyle}">${it.jawaban||'-'}</li>`;
+    });
+    body+=`</ol>`;
+  }
+
+  body+=`</div></div>`;
+
+  // Dokumen XML/HTML yang diformat khusus untuk Microsoft Word
+  const html=`<html xmlns:o='urn:schemas-microsoft-com:office:office' xmlns:w='urn:schemas-microsoft-com:office:word' xmlns='http://www.w3.org/TR/REC-html40'>
+<head>
+<meta charset='utf-8'>
+<title>Soal Ujian</title>
+<!--[if gte mso 9]>
+<xml>
+  <w:WordDocument>
+    <w:View>Print</w:View>
+    <w:Zoom>100</w:Zoom>
+    <w:DoNotOptimizeForBrowser/>
+  </w:WordDocument>
+</xml>
+<![endif]-->
+<style>
+  @page Section1 {
+    size: 21.5cm 33.0cm; /* Ukuran F4 / Folio Indonesia */
+    margin: 1.0cm 1.5cm 0.5cm 1.5cm; /* Top 1cm, Right 1.5cm, Bottom 0.5cm, Left 1.5cm */
+    mso-header-margin: 0.5cm;
+    mso-footer-margin: 0.5cm;
+    mso-paper-source: 0;
+  }
+  div.Section1 {
+    page: Section1;
+  }
+  body {
+    font-family: 'Times New Roman', serif;
+    font-size: 11pt;
+    line-height: 1.3;
+    color: #000000;
+  }
+  p {
+    margin: 0 0 4pt 0;
+  }
+  /* Mencegah MS Word membungkus teks polos (di dalam td/div) dengan gaya
+     paragraf "Normal" bawaan yang punya jarak spasi besar. */
+  p.MsoNormal, li.MsoNormal, div.MsoNormal, .kop-p {
+    margin: 0;
+    margin-bottom: .0001pt;
+    mso-margin-top-alt: 0;
+    mso-margin-bottom-alt: 0;
+    mso-pagination: widow-orphan;
+  }
+  .rtl {
+    direction: rtl;
+    text-align: right;
+  }
+  .rtl p, .rtl div, .rtl td, .rtl li {
+    font-family: "Traditional Arabic", "Scheherazade New", serif;
+    font-size: 14pt;
+    line-height: 1.15;
+  }
+  .ltr {
+    direction: ltr;
+    text-align: left;
+  }
+  table.kop-table {
+    width: 100%;
+    border-collapse: collapse;
+    border: 1.5pt solid #000000;
+    font-family: Arial, Helvetica, sans-serif;
+    font-size: 9.5pt;
+    margin-bottom: 12pt;
+  }
+  table.kop-table td {
+    border: 1.0pt solid #000000;
+    padding: 1px 6px;
+    vertical-align: middle;
+    line-height: 1.2;
+  }
+  .kop-title {
+    font-family: Arial, Helvetica, sans-serif;
+    font-size: 12.5pt;
+    font-weight: bold;
+    text-align: center;
+    text-transform: uppercase;
+    line-height: 1.2;
+    margin-bottom: 0;
+    color: #000000;
+  }
+  .kop-subtitle {
+    font-family: Arial, Helvetica, sans-serif;
+    font-size: 11.5pt;
+    font-weight: bold;
+    text-align: center;
+    text-transform: uppercase;
+    line-height: 1.2;
+    margin-bottom: 0;
+    color: #000000;
+  }
+  .kop-tahun {
+    font-family: Arial, Helvetica, sans-serif;
+    font-size: 11pt;
+    font-weight: bold;
+    text-align: center;
+    line-height: 1.2;
+    margin-bottom: 4px;
+    color: #000000;
+  }
+  .section-title {
+    font-size: 11.5pt;
+    font-weight: bold;
+    margin-top: 14pt;
+    margin-bottom: 6pt;
+    color: #000000;
+  }
+  .rtl .section-title {
+    font-size: 14.5pt;
+  }
+  table.soal-table {
+    width: 100%;
+    border-collapse: collapse;
+    margin-bottom: 10pt;
+  }
+  table.soal-table td {
+    padding: 3px 0;
+    vertical-align: top;
+  }
+  .opsi-list {
+    margin-top: 0;
+    margin-bottom: 0;
+    mso-margin-top-alt: 0;
+    mso-margin-bottom-alt: 0;
+  }
+  .opsi-item {
+    margin: 0;
+    padding: 0;
+    line-height: 1;
+    mso-line-height-rule: exactly;
+    mso-margin-top-alt: 0;
+    mso-margin-bottom-alt: 0;
+  }
+  .line-answer {
+    border-bottom: 1.0pt solid #000000;
+    height: 28px;
+    margin-bottom: 6px;
+  }
+  .page-break {
+    page-break-before: always;
+    break-before: page;
+  }
+</style>
+</head>
+<body>
+<div class="Section1">
+  ${body}
+</div>
+</body>
+</html>`;
+
+  const blob=new Blob(['\ufeff',html],{type:'application/msword'});
+  const url=URL.createObjectURL(blob);
+  const a=document.createElement('a');
+  a.href=url;
+  const mapelName=(data.mapel||'soal').replace(/[^a-zA-Z0-9\u0600-\u06FF]/g,'_');
+  a.download=`Soal_${mapelName}_${data.kelas}.doc`;
+  document.body.appendChild(a);a.click();document.body.removeChild(a);
+  URL.revokeObjectURL(url);
+  showToast({type:'success',title:'File Word Diunduh',message:'File .doc berhasil diunduh.',duration:3000});
+}
+
+// ===================== INIT =====================
+// Bagian yang HANYA boleh jalan sekali (pasang event listener, ambil logo, dsb),
+// terlepas dari akun mana yang dipilih / berapa kali ganti akun.
+let appBootstrapped=false;
+function bootstrapOnce(){
+  if(appBootstrapped) return;
+  appBootstrapped=true;
+
+  updateKelas();
+  updateTipeHint();
+  updateJenisGambarState();
+  loadPixabayKey();
+  ['kop_instansi_atas','kop_penilaian','kop_tahun','kop_waktu','kop_hari','mapel'].forEach(id=>{
+    const el=document.getElementById(id);
+    if(el) el.addEventListener('input',updatePreview);
+  });
+  if(isGasConfigured()){
+    callGAS('getLogo',{},'GET')
+      .then(b64=>{
+        if(b64){
+          logoBase64=b64;
+          document.getElementById('logo-preview-img').src=b64;
+          document.getElementById('logo-preview-img').classList.add('show');
+          document.getElementById('upload-placeholder').style.display='none';
+          document.getElementById('logo-actions').style.display='flex';
+          document.getElementById('logo-drop-area').classList.add('has-logo');
+          updatePreview();
+        }
+      })
+      .catch(()=>{});
+  }
+}
+
+// Bagian yang HARUS jalan ulang setiap kali akun dipilih/diganti,
+// supaya data API Key yang tampil selalu milik akun yang sedang aktif.
+function initMainApp(){
+  bootstrapOnce();
+  updateAccountBadge();
+  updatePreview();
+  loadApiKeysFromStorage();
+  renderApiKeySlots();
+  updateKeyBadge();
+  sendHeartbeat(); // langsung lapor "online" begitu akun dipilih, tidak perlu nunggu tick 10 detik
+}
+
+document.addEventListener('DOMContentLoaded',()=>{
+  // Kalau browser ini sudah pernah pilih akun sebelumnya, langsung masuk tanpa nampilkan picker lagi.
+  const saved = localStorage.getItem('gensoal-selected-account');
+  if(saved && ACCOUNT_CONFIG[saved]){
+    currentAccount = saved;
+    document.getElementById('acc-picker-overlay').style.display='none';
+    initMainApp();
+  }
+  // Kalau belum, overlay pilih akun tetap tampil (default), menunggu klik di selectAccount().
+
+  pollOnlineCounts(); // supaya badge online di kartu picker langsung terisi
+  setInterval(presenceTick, PRESENCE_TICK_MS);
+
+  // Best-effort: tandai offline segera saat tab ditutup/reload.
+  // Tidak dijamin selalu berhasil terkirim -- kalau gagal, sesi tetap otomatis
+  // dianggap offline begitu heartbeat berhenti > PRESENCE_ACTIVE_WINDOW_MS.
+  window.addEventListener('pagehide', ()=>{
+    if(currentAccount && isGasConfigured()){
+      callGAS('removePresence',{sessionId:SESSION_ID},'POST').catch(()=>{});
+    }
+  });
+});
+</script>
+</body>
+</html>
