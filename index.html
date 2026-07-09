@@ -818,7 +818,7 @@ var GAS_API_URL = (function(){
   }catch(e){}
   
   // GANTI TEKS DI BAWAH INI DENGAN URL WEB APP GOOGLE APPS SCRIPT ANDA
-  return 'https://script.google.com/macros/s/AKfycbyuW91ZDIOql2DAKmeIlEfVhBZ3C7_lC64LXHzXcQ5ignEVNcoZoRhp8Y2QDkZo8XM/exec'; 
+  return 'https://script.google.com/macros/s/GANTI_DENGAN_ID_DEPLOYMENT_ANDA/exec'; 
 })();
 
 function isGasConfigured(){ return !!GAS_API_URL; }
@@ -969,7 +969,7 @@ function refreshOnlineBadges(counts){
 
 function pollOnlineCounts(){
   if(!isGasConfigured()) return;
-  callGAS('getOnlineCounts',{},'GET')
+  callGAS('getOnlineCounts',{},'POST')
     .then(data=>{ try{ refreshOnlineBadges(data||{}); }catch(e){} })
     .catch(()=>{});
 }
@@ -1040,9 +1040,17 @@ function loadApiKeysFromStorage(){
   }catch(e){}
   
   if(isGasConfigured()){
-    callGAS('getApiKeys',{accountId:currentAccount},'GET')
+    // ---> PERUBAHAN: Mengubah parameter pemanggilan dari 'GET' menjadi 'POST' untuk menghindari pemblokiran CORS di GitHub Pages
+    callGAS('getApiKeys',{accountId:currentAccount},'POST')
       .then(arr=>{
-        if(Array.isArray(arr)){arr.forEach((v,i)=>{if(i<n&&v)apiKeys[i].value=v});renderApiKeySlots();updateKeyBadge();}
+        if(Array.isArray(arr)){
+          arr.forEach((v,i)=>{
+            if(i<n) apiKeys[i].value = v || '';
+          });
+          persistApiKeys(); // Menyimpan API Key yang berhasil diunduh ke localStorage secara lokal
+          renderApiKeySlots();
+          updateKeyBadge();
+        }
       })
       .catch(()=>{});
   }
@@ -1142,7 +1150,8 @@ function loadPixabayKey(){
     if(saved){const el=document.getElementById('pixabay-key-input'); if(el) el.value=saved;}
   }catch(e){}
   if(isGasConfigured()){
-    callGAS('getPixabayKey',{},'GET')
+    // ---> PERUBAHAN: Mengubah 'GET' menjadi 'POST' untuk menghindari pemblokiran CORS di GitHub Pages
+    callGAS('getPixabayKey',{},'POST')
       .then(val=>{
         if(val){
           const el=document.getElementById('pixabay-key-input');
@@ -1176,6 +1185,7 @@ function imageBlockHtml(item, maxWidthPx){
     `</div>`;
 }
 
+// ===================== DESAIN RE-ROTATION BADGE & STATUS =====
 function updateKeyBadge(){
   const count=apiKeys.filter(k=>k.value).length;
   const badge=document.getElementById('key-count-badge');
@@ -2189,7 +2199,8 @@ function bootstrapOnce(){
     if(el) el.addEventListener('input',updatePreview);
   });
   if(isGasConfigured()){
-    callGAS('getLogo',{},'GET')
+    // ---> PERUBAHAN: Mengubah 'GET' menjadi 'POST' untuk menghindari pemblokiran CORS di GitHub Pages
+    callGAS('getLogo',{},'POST')
       .then(b64=>{
         if(b64){
           logoBase64=b64;
