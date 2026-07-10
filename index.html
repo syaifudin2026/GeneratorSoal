@@ -839,11 +839,11 @@ async function callGAS(action, params, method){
     var qs = new URLSearchParams(Object.assign({ action: action }, params)).toString();
     res = await fetch(GAS_API_URL + '?' + qs, { method: 'GET' });
   } else {
+    // PERBAIKAN: Hapus headers dan keepalive. Memaksa browser mengirim
+    // tipe default (text/plain) tanpa memicu CORS Preflight/OPTIONS yang bermasalah.
     res = await fetch(GAS_API_URL, {
       method: 'POST',
-      headers: { 'Content-Type': 'text/plain;charset=utf-8' },
-      body: JSON.stringify(Object.assign({ action: action }, params)),
-      keepalive: true
+      body: JSON.stringify(Object.assign({ action: action }, params))
     });
   }
   var json = await res.json();
