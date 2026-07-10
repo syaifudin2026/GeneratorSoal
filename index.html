@@ -935,9 +935,6 @@ function removeLogo(e){
 }
 
 // ===================== PRESENCE / ONLINE COUNTER =====================
-// Catatan: ini BUKAN deteksi IP (Apps Script Web App tidak menyediakan IP
-// pengunjung ke server). Ini menghitung sesi tab yang masih aktif (heartbeat)
-// per akun, yang untuk kebutuhan "berapa yang sedang online" justru lebih akurat.
 function getSessionId(){
   let sid = sessionStorage.getItem('gensoal-session-id');
   if(!sid){
@@ -969,7 +966,6 @@ function refreshOnlineBadges(counts){
 
 function pollOnlineCounts(){
   if(!isGasConfigured()) return;
-  // ---> REVERT TO GET: Mendapatkan data status online secara aman lewat GET
   callGAS('getOnlineCounts',{},'GET')
     .then(data=>{ try{ refreshOnlineBadges(data||{}); }catch(e){} })
     .catch(err => console.error("Gagal polling online:", err));
@@ -1041,14 +1037,13 @@ function loadApiKeysFromStorage(){
   }catch(e){}
   
   if(isGasConfigured()){
-    // ---> REVERT TO GET: Menggunakan GET untuk memuat daftar API Key dari Google Sheet secara instan & bebas dari CORS preflight
     callGAS('getApiKeys',{accountId:currentAccount},'GET')
       .then(arr=>{
         if(Array.isArray(arr)){
           arr.forEach((v,i)=>{
             if(i<n) apiKeys[i].value = v || '';
           });
-          persistApiKeys(); // Sinkronisasi otomatis ke penyimpanan lokal browser
+          persistApiKeys(); 
           renderApiKeySlots();
           updateKeyBadge();
         }
@@ -1067,13 +1062,18 @@ function saveApiKey(index){
   const input = document.getElementById(`apikey-input-${index}`);
   const val = input.value.trim();
   if(!val){showToast({type:'error',title:'API Key Kosong',message:'Masukkan API Key terlebih dahulu.'});return;}
-  apiKeys[index].value = val;
+  
+  // Kirim API Key asli ke backend untuk disimpan
+  saveApiKeyToSpreadsheet(index, val);
+
+  // KEAMANAN: Jangan simpan API Key asli di browser! Simpan mask-nya saja.
+  apiKeys[index].value = "********";
   apiKeys[index].usageCount = 0;
   persistApiKeys();
-  saveApiKeyToSpreadsheet(index, val);
+  
   renderApiKeySlots();
   updateKeyBadge();
-  showToast({type:'success',title:'API Key Tersimpan',message:`API Key #${index+1} berhasil disimpan.`,duration:3000});
+  showToast({type:'success',title:'API Key Diamankan',message:`API Key #${index+1} berhasil disimpan dengan aman di server.`,duration:3000});
 }
 
 function deleteApiKey(index){
@@ -1119,8 +1119,7 @@ function getActiveApiKey(){
     currentKeyUsage=0;
     persistKeyState();
   }
-  const key=apiKeys[currentKeyIndex].value;
-  return key;
+  return apiKeys[currentKeyIndex].value;
 }
 
 function afterKeyUsed(){
@@ -1151,7 +1150,6 @@ function loadPixabayKey(){
     if(saved){const el=document.getElementById('pixabay-key-input'); if(el) el.value=saved;}
   }catch(e){}
   if(isGasConfigured()){
-    // ---> REVERT TO GET: Menggunakan GET untuk membaca kunci Pixabay dengan aman
     callGAS('getPixabayKey',{},'GET')
       .then(val=>{
         if(val){
@@ -1174,8 +1172,6 @@ function savePixabayKey(){
   showToast({type:'success',title:'API Key Pixabay Tersimpan',message:val?'Pencarian gambar akan memakai Pixabay lalu Wikimedia Commons.':'Key dikosongkan, pencarian gambar hanya memakai Wikimedia Commons.',duration:4000});
 }
 
-// Menghasilkan blok <img> untuk disisipkan SEBELUM teks soal, jika item punya gambarData.
-// maxWidthPx mengatur ukuran tampilan (PDF/preview lebih kecil, Word bisa lebih besar).
 function imageBlockHtml(item, maxWidthPx){
   if(!item || !item.gambarData) return '';
   const w = maxWidthPx || 260;
@@ -1202,7 +1198,9 @@ function updateKeyStatusBar(){
   if(savedKeys.length===0){bar.style.display='none';return;}
   bar.style.display='flex';
   const key=apiKeys[currentKeyIndex]?.value||'';
-  const masked=key?`Key #${currentKeyIndex+1} (${key.slice(0,8)}...)`: '—';
+  
+  // Masking API key status di Frontend
+  const masked = key ? `Key #${currentKeyIndex+1} (Tersimpan Aman)` : '—';
   if(activeDisplay) activeDisplay.textContent=masked;
   if(usageDisplay) usageDisplay.textContent=currentKeyUsage;
 }
@@ -1343,17 +1341,11 @@ function buildKopHTML(kop, forPrint=false){
 </div>`;
 }
 
-// Membuat format khusus KOP HTML yang kompatibel penuh dengan MS Word
 function buildKopHTMLForWord(kop) {
   const logoHTML = kop.logoB64
     ? `<img src="${kop.logoB64}" width="72" height="72" style="max-width:72px;max-height:72px;display:block;margin:0 auto;" />`
     : `<div style="font-size:8pt;color:#999;text-align:center;border:1px dashed #999;padding:10px;">Logo Ujian</div>`;
   
-  // Setiap teks di dalam sel dibungkus <p style="margin:0"> secara eksplisit.
-  // Ini WAJIB: jika teks dibiarkan polos di dalam <td>, MS Word akan
-  // membungkusnya sendiri sebagai paragraf "Normal" bawaan Word yang punya
-  // jarak spasi default (biasanya ~8-10pt), sehingga kop terlihat renggang
-  // walau padding CSS sudah dikecilkan.
   const P = (txt, extra='') => `<p class="kop-p" style="margin:0;padding:0;line-height:1.15;mso-line-height-rule:exactly;mso-margin-top-alt:0;mso-margin-bottom-alt:0;${extra}">${txt}</p>`;
 
   return `
@@ -1486,7 +1478,7 @@ function isBahasaArab(mapel){
   return lower.includes('arab') || lower.includes('arabic') || lower==='ba' || lower.includes('bahasa arab');
 }
 
-// ===================== HINT TIPE SOAL (kondisikan utk Bahasa Arab) =====================
+// ===================== HINT TIPE SOAL =====================
 function updateTipeHint(){
   const mapelEl=document.getElementById('mapel');
   const isArab=isBahasaArab(mapelEl?mapelEl.value:'');
@@ -1530,8 +1522,6 @@ function letterFor(idx,isArab){ const arr=isArab?ARABIC_LETTERS:LATIN_LETTERS; r
 function joinJawabanArr(arr,isArab){ if(!Array.isArray(arr)) return arr||'-'; return arr.join(isArab?'، ':', '); }
 function numLabel(no,isArab){ return isArab ? (arabNums[(no||1)-1]||no) : (no||''); }
 
-// Memastikan setiap item r1/r2 punya field "tipe" yang konsisten dengan pilihan form,
-// walau AI kadang lupa menyertakannya (safety-net, tidak mengubah skenario generate).
 function normalizeSoalTipe(data,jsonSoal){
   if(jsonSoal.r1){
     jsonSoal.r1.forEach(it=>{
@@ -1550,8 +1540,6 @@ function normalizeSoalTipe(data,jsonSoal){
   return jsonSoal;
 }
 
-// Mengacak kolom jawaban Menjodohkan sekali saja per hasil generate,
-// supaya cetak/preview/word export konsisten memakai urutan huruf yang sama.
 function prepareMenjodohkan(jsonSoal,isArab){
   if(!jsonSoal.r2||jsonSoal.r2.length===0) return;
   const items=jsonSoal.r2.filter(it=>it.tipe==='menjodohkan');
@@ -1563,8 +1551,6 @@ function prepareMenjodohkan(jsonSoal,isArab){
   jsonSoal._menjodohkanOptions=pool.map(p=>({letter:p.letter,text:p.text}));
 }
 
-// Label instruksi Romawi I/II yang menyesuaikan tipe (PG/Kompleks/Campuran, Isian/Menjodohkan/Campuran)
-// dan bahasa (Indonesia/Arab) -- inilah pengkondisian Bahasa Arab untuk Kompleks & Menjodohkan.
 function getSecLabels(data,isArab){
   const sec1label = isArab
     ? (data.r1_tipe==='Pilihan Ganda Kompleks' ? 'أولاً: اختر جميع الإجابات الصحيحة! (قد تكون أكثر من إجابة، حتى ٣)'
@@ -1586,61 +1572,14 @@ function getSecLabels(data,isArab){
   return {sec1label,sec2label,sec3label};
 }
 
-function instruksiPG_ID(){ return "- Untuk soal tipe 'Pilihan Ganda' biasa: sediakan 4-5 opsi, HANYA SATU jawaban benar. Field \"jawaban\" berupa string 1 huruf, contoh \"A\". Field \"tipe\" isi \"pg\".\n"; }
-function instruksiPGK_ID(){ return "- Untuk soal tipe 'Pilihan Ganda Kompleks': sediakan 5-6 opsi, dan jawaban BENAR boleh LEBIH DARI SATU (minimal 2, maksimal 3 jawaban benar). Field \"jawaban\" WAJIB berupa array huruf, contoh [\"A\",\"C\"]. Field \"tipe\" isi \"pgk\".\n"; }
-function instruksiR1_ID(tipe){
-  if(tipe==='Pilihan Ganda Kompleks') return instruksiPGK_ID();
-  if(tipe==='Campuran') return instruksiPG_ID()+instruksiPGK_ID()+"- Campur kedua tipe di atas secara acak dan seimbang, isi field \"tipe\" tiap soal.\n";
-  return instruksiPG_ID();
-}
-function instruksiIsian_ID(){ return "- Untuk soal tipe 'Isian Singkat': field \"soal\" berisi pertanyaan, field \"jawaban\" berisi jawaban singkat. Field \"tipe\" isi \"isian\".\n"; }
-function instruksiMenjodohkan_ID(){ return "- Untuk soal tipe 'Menjodohkan': field \"soal\" berisi pernyataan, field \"jawaban\" berisi kata/frasa PASANGAN yang benar (singkat, unik, tidak mirip antar soal). Field \"tipe\" isi \"menjodohkan\". Jangan sertakan huruf pilihan pada \"jawaban\".\n"; }
-function instruksiR2_ID(tipe){
-  if(tipe==='Menjodohkan') return instruksiMenjodohkan_ID();
-  if(tipe==='Campuran') return instruksiIsian_ID()+instruksiMenjodohkan_ID()+"- Campur kedua tipe di atas secara acak dan seimbang, isi field \"tipe\" tiap soal.\n";
-  return instruksiIsian_ID();
-}
-function instruksiPG_AR(){ return "- للأسئلة العادية: 4-5 اختيارات، إجابة صحيحة واحدة. حقل \"jawaban\" حرف واحد مثل \"أ\". حقل \"tipe\": \"pg\".\n"; }
-function instruksiPGK_AR(){ return "- للأسئلة المعقدة (Kompleks): 5-6 اختيارات، إجابات صحيحة قد تكون أكثر من واحدة (2-3). حقل \"jawaban\" مصفوفة حروف مثل [\"أ\",\"ج\"]. حقل \"tipe\": \"pgk\".\n"; }
-function instruksiR1_AR(tipe){
-  if(tipe==='Pilihan Ganda Kompleks') return instruksiPGK_AR();
-  if(tipe==='Campuran') return instruksiPG_AR()+instruksiPGK_AR()+"- اخلط بين النوعين بشكل عشوائي ومتوازن، وحدد \"tipe\" لكل سؤال.\n";
-  return instruksiPG_AR();
-}
-function instruksiIsian_AR(){ return "- للأسئلة القصيرة: حقل \"soal\" للسؤال، \"jawaban\" لإجابة قصيرة. حقل \"tipe\": \"isian\".\n"; }
-function instruksiMenjodohkan_AR(){ return "- لأسئلة التوصيل (Menjodohkan): \"soal\" للعبارة، \"jawaban\" للكلمة المطابقة القصيرة الفريدة. حقل \"tipe\": \"menjodohkan\". لا تُدرج حرف الاختيار داخل \"jawaban\".\n"; }
-function instruksiR2_AR(tipe){
-  if(tipe==='Menjodohkan') return instruksiMenjodohkan_AR();
-  if(tipe==='Campuran') return instruksiIsian_AR()+instruksiMenjodohkan_AR()+"- اخلط بين النوعين بشكل عشوائي ومتوازن، وحدد \"tipe\" لكل سؤال.\n";
-  return instruksiIsian_AR();
-}
-
-function buildPromptArab(data){
-  return `أنت معلم خبير متخصص في إعداد أسئلة الاختبارات لمادة اللغة العربية في إندونيسيا.
-اصنع أسئلة للمرحلة ${data.jenjang} الصف ${data.kelas} الفصل ${data.semester} وفق منهج ${data.kurikulum}.
-الموضوع: ${data.materi}.
-
-متطلبات هامة جداً:
-- اكتب جميع الأسئلة والخيارات والإجابات باللغة العربية الفصحى مع الشكل الكامل (الحركات).
-- اكتب النص من اليمين إلى اليسار.
-- كن متخصصاً محترفاً في اللغة العربية.
-- الهيكل المطلوب: الجزء الأول (${data.r1_tipe}): ${data.r1_jml} سؤالاً.${data.r2_jml>0?` الجزء الثاني (${data.r2_tipe}): ${data.r2_jml} سؤالاً.`:''}${data.r3_jml>0?` الجزء الثالث (${data.r3_tipe}): ${data.r3_jml} سؤالاً.`:''}
-
-تعليمات تفصيلية لكل نوع من الأسئلة:
-${instruksiR1_AR(data.r1_tipe)}${data.r2_jml>0?instruksiR2_AR(data.r2_tipe):''}
-أرجع المخرجات بتنسيق JSON نكي فقط وبدون تنسيق Markdown، مع حقل "tipe" في كل سؤال:
-{"r1":[{"no":1,"tipe":"pg","soal":"...","opsi":["أ. ...","ب. ...","ج. ...","د. ..."],"jawaban":"أ"}],"r2":[{"no":1,"tipe":"isian","soal":"...","jawaban":"..."}],"r3":[{"no":1,"soal":"...","jawaban":"..."}]}
-إذا كان عدد الجزء 2 أو 3 = 0، أعط مصفوفة فارغة [].`;
-}
-
 // ===================== GENERATE =====================
 async function generateAI(){
   const mapel=document.getElementById('mapel').value.trim();
   const materi=document.getElementById('materi').value.trim();
   if(!mapel||!materi){showToast({type:'error',title:'Form Belum Lengkap',message:'Mata Pelajaran dan Bab Materi wajib diisi.'});return;}
 
-  const apiKey=getActiveApiKey();
-  if(!apiKey){
+  const isKeyAvailable = !!getActiveApiKey(); 
+  if(!isKeyAvailable){
     showToast({type:'error',title:'API Key Belum Ada',message:'Silakan tambahkan API Key di menu Pengaturan API terlebih dahulu.',duration:6000});
     switchTab('api-settings');
     return;
@@ -1675,9 +1614,10 @@ async function generateAI(){
   try{
     let resp;
     if(isGasConfigured()){
-      resp=await callGAS('generateSoal',{data:data,apiKey:apiKey},'POST');
+      // KEAMANAN: Memanggil server dengan nomor akun & indeks kunci. Backend yang menarik Kunci Asli.
+      resp=await callGAS('generateSoal',{data:data, accountId:currentAccount, keyIndex:currentKeyIndex},'POST');
     } else {
-      resp=await generateSoalClientSide(data,apiKey,isArab);
+      throw new Error("Sistem Keamanan Aktif: Harap gunakan integrasi Google Apps Script (GAS) agar API Key tetap rahasia. Akses offline dinonaktifkan.");
     }
     afterKeyUsed();
 
@@ -1696,35 +1636,6 @@ async function generateAI(){
     showLoading(false);
     handleError(err.message||'Gagal menghubungi server atau API.');
   }
-}
-
-// ===================== CLIENT SIDE FALLBACK =====================
-// Catatan: fitur pencarian gambar otomatis (Pixabay/Wikimedia) hanya aktif saat
-// aplikasi berjalan sebagai Web App Apps Script (lewat generateSoalGAS di Code.gs),
-// karena butuh UrlFetchApp di server. Mode fallback ini (dipakai kalau file dibuka
-// di luar Apps Script) tetap generate soal seperti biasa, hanya tanpa gambar.
-async function generateSoalClientSide(data,apiKey,isArab){
-  let prompt;
-  if(isArab){
-    prompt=buildPromptArab(data);
-  } else {
-    prompt=`Anda adalah guru ahli pembuat soal ujian berdasarkan standar ${data.kurikulum} Indonesia.
-Buat soal untuk jenjang ${data.jenjang} Kelas ${data.kelas} Semester ${data.semester}.
-Mata Pelajaran: ${data.mapel}. Materi/Bab: ${data.materi}. Karakteristik Soal: ${data.karakteristik}.
-Struktur: Romawi I (${data.r1_tipe}): ${data.r1_jml} soal.${data.r2_jml>0?` Romawi II (${data.r2_tipe}): ${data.r2_jml} soal.`:''}${data.r3_jml>0?` Romawi III (${data.r3_tipe}): ${data.r3_jml} soal.`:''}
-Instruksi detail per tipe soal:
-${instruksiR1_ID(data.r1_tipe)}${data.r2_jml>0?instruksiR2_ID(data.r2_tipe):''}
-KEMBALIKAN OUTPUT HANYA DALAM FORMAT JSON MURNI TANPA MARKDOWN. Setiap soal WAJIB punya field "tipe".
-{"r1":[{"no":1,"tipe":"pg","soal":"...","opsi":["A. ...","B. ...","C. ...","D. ..."],"jawaban":"A"}],"r2":[{"no":1,"tipe":"isian","soal":"...","jawaban":"..."}],"r3":[{"no":1,"soal":"...","jawaban":"..."}]}
-Jika jumlah Romawi 2 atau 3 = 0, berikan array kosong []. Sesuaikan jumlah opsi dengan jenjang.`;
-  }
-  const url=`https://generativelanguage.googleapis.com/v1beta/models/${data.model}:generateContent?key=${apiKey}`;
-  const res=await fetch(url,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({contents:[{parts:[{text:prompt}]}],generationConfig:{responseMimeType:"application/json"}})});
-  if(!res.ok){const e=await res.json();throw new Error(`${res.status}: ${e.error?.message||'Error dari Gemini API'}`)}
-  const r=await res.json();
-  
-  let generatedText = r.candidates[0].content.parts[0].text;
-  return bersihkanDanParseClientSide(generatedText);
 }
 
 // ===================== RENDER PRINT =====================
@@ -1817,7 +1728,6 @@ function renderPrintArea(data,jsonSoal,kop,isArab){
   pa.innerHTML=html;
 }
 
-// Hint kecil di dekat soal PGK saat mode Campuran
 function pgkHintText(isArab){ return isArab ? '(قد تكون الإجابة أكثر من واحدة)' : '(Jawaban bisa lebih dari 1)'; }
 
 // ===================== UPDATE RIGHT PANEL WITH SOAL =====================
@@ -1893,13 +1803,11 @@ async function downloadWord(){
 
   showToast({type:'info',title:'Menyiapkan File Word...',message:'Berkas sedang disusun dalam layout halaman F4.',duration:4000});
 
-  // Penyusunan struktur dokumen dengan layout murni HTML ramah Word (Editable Kop & Soal)
   let body = `<div class="${arabClass}">`;
   body += buildKopHTMLForWord(kop);
 
   const {sec1label,sec2label,sec3label}=getSecLabels(data,isArab);
 
-  // Bagian I: PG / Pilihan Ganda / Pilihan Ganda Kompleks
   if(jsonSoal.r1&&jsonSoal.r1.length>0){
     body+=`<div class="section-title"><b>${sec1label}</b></div>`;
     body+=`<table class="soal-table">`;
@@ -1927,7 +1835,6 @@ async function downloadWord(){
     body+=`</table>`;
   }
 
-  // Bagian II: Isian Singkat / Menjodohkan / Campuran
   if(jsonSoal.r2&&jsonSoal.r2.length>0){
     const isianItems=jsonSoal.r2.filter(it=>it.tipe!=='menjodohkan');
     const menjItems=jsonSoal.r2.filter(it=>it.tipe==='menjodohkan');
@@ -1965,7 +1872,6 @@ async function downloadWord(){
     }
   }
 
-  // Bagian III: Uraian / Essay
   if(jsonSoal.r3&&jsonSoal.r3.length>0){
     body+=`<div class="section-title"><b>${sec3label}</b></div>`;
     body+=`<table class="soal-table">`;
@@ -1985,7 +1891,6 @@ async function downloadWord(){
     body+=`</table>`;
   }
 
-  // Kunci Jawaban dengan Halaman Baru (Page Break)
   const kunciTitle=isArab?'مفتاح الإجابات':'KUNCI JAWABAN';
   const r1Title=isArab?'الجزء الأول':'Romawi I';
   const r2Title=isArab?'الجزء الثاني':'Romawi II';
@@ -2022,7 +1927,6 @@ async function downloadWord(){
 
   body+=`</div></div>`;
 
-  // Dokumen XML/HTML yang diformat khusus untuk Microsoft Word
   const html=`<html xmlns:o='urn:schemas-microsoft-com:office:office' xmlns:w='urn:schemas-microsoft-com:office:word' xmlns='http://www.w3.org/TR/REC-html40'>
 <head>
 <meta charset='utf-8'>
@@ -2056,8 +1960,6 @@ async function downloadWord(){
   p {
     margin: 0 0 4pt 0;
   }
-  /* Mencegah MS Word membungkus teks polos (di dalam td/div) dengan gaya
-     paragraf "Normal" bawaan yang punya jarak spasi besar. */
   p.MsoNormal, li.MsoNormal, div.MsoNormal, .kop-p {
     margin: 0;
     margin-bottom: .0001pt;
@@ -2184,8 +2086,6 @@ async function downloadWord(){
 }
 
 // ===================== INIT =====================
-// Bagian yang HANYA boleh jalan sekali (pasang event listener, ambil logo, dsb),
-// terlepas dari akun mana yang dipilih / berapa kali ganti akun.
 let appBootstrapped=false;
 function bootstrapOnce(){
   if(appBootstrapped) return;
@@ -2200,7 +2100,6 @@ function bootstrapOnce(){
     if(el) el.addEventListener('input',updatePreview);
   });
   if(isGasConfigured()){
-    // ---> REVERT TO GET: Menggunakan GET untuk memuat logo secara aman bebas hambatan CORS
     callGAS('getLogo',{},'GET')
       .then(b64=>{
         if(b64){
@@ -2217,8 +2116,6 @@ function bootstrapOnce(){
   }
 }
 
-// Bagian yang HARUS jalan ulang setiap kali akun dipilih/diganti,
-// supaya data API Key yang tampil selalu milik akun yang sedang aktif.
 function initMainApp(){
   bootstrapOnce();
   updateAccountBadge();
@@ -2226,25 +2123,20 @@ function initMainApp(){
   loadApiKeysFromStorage();
   renderApiKeySlots();
   updateKeyBadge();
-  sendHeartbeat(); // langsung lapor "online" begitu akun dipilih, tidak perlu nunggu tick 10 detik
+  sendHeartbeat(); 
 }
 
 document.addEventListener('DOMContentLoaded',()=>{
-  // Kalau browser ini sudah pernah pilih akun sebelumnya, langsung masuk tanpa nampilkan picker lagi.
   const saved = localStorage.getItem('gensoal-selected-account');
   if(saved && ACCOUNT_CONFIG[saved]){
     currentAccount = saved;
     document.getElementById('acc-picker-overlay').style.display='none';
     initMainApp();
   }
-  // Kalau belum, overlay pilih akun tetap tampil (default), menunggu klik di selectAccount().
 
-  pollOnlineCounts(); // supaya badge online di kartu picker langsung terisi
+  pollOnlineCounts(); 
   setInterval(presenceTick, PRESENCE_TICK_MS);
 
-  // Best-effort: tandai offline segera saat tab ditutup/reload.
-  // Tidak dijamin selalu berhasil terkirim -- kalau gagal, sesi tetap otomatis
-  // dianggap offline begitu heartbeat berhenti > PRESENCE_ACTIVE_WINDOW_MS.
   window.addEventListener('pagehide', ()=>{
     if(currentAccount && isGasConfigured()){
       callGAS('removePresence',{sessionId:SESSION_ID},'POST').catch(()=>{});
